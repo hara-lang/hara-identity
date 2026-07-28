@@ -1,0 +1,7 @@
+{:identity/format 1
+ :identity/name "hara"
+ :keys {}
+ :registry-ci {:keys []}
+ :policy {:signature :ed25519
+          :require-publisher-intent true
+          :require-registry-attestation true}}

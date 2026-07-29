@@ -1,0 +1,20 @@
+name: Verify identity policy
+
+on:
+  pull_request:
+    paths: [identity.edn, publishers/**, revocations/**]
+
+permissions:
+  contents: read
+
+jobs:
+  policy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check bootstrap identity invariants
+        run: |
+          grep -q ':identity/format 2' identity.edn
+          grep -q ':identity/name "hara"' identity.edn
+          grep -q ':identity/trust :github-governed' identity.edn
+          ! git grep -nEi '(private.?key|BEGIN [A-Z ]*PRIVATE)' -- . ':!README.md'

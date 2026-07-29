@@ -1,7 +1,9 @@
-{:identity/format 1
+{:identity/format 2
  :identity/name "hara"
+ :identity/trust :github-governed
  :keys {}
- :registry-ci {:keys []}
+ :registry-ci {:mode :github-actions
+               :keys []}
  :policy {:signature :ed25519
           :require-publisher-intent true
           :require-registry-attestation true}}

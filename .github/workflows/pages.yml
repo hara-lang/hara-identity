@@ -1,31 +1,32 @@
-name: Deploy id.hara-lang.org
+name: Deploy id.hara-long.org
 
 on:
   push:
-    branches: [main]
+    branches: [main, production]
     paths: [site/**, .github/workflows/pages.yml]
   workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: pages
+  group: netlify-id-${{ github.ref_name }}
   cancel-in-progress: false
 
 jobs:
   deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: site
-      - id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Deploy main to id.testing.hara-long.org
+        if: github.ref_name == 'main'
+        run: npx --yes netlify-cli deploy --prod --dir site --message "main ${GITHUB_SHA}"
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_TESTING_SITE_ID }}
+      - name: Deploy production to id.hara-long.org
+        if: github.ref_name == 'production'
+        run: npx --yes netlify-cli deploy --prod --dir site --message "production ${GITHUB_SHA}"
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_PRODUCTION_SITE_ID }}

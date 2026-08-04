@@ -4,6 +4,9 @@ on:
   push:
     branches: [main, production]
     paths: [site/**, .github/scripts/**, .github/workflows/pages.yml]
+  pull_request:
+    branches: [main, production]
+    types: [closed]
   workflow_dispatch:
 
 permissions:
@@ -15,30 +18,42 @@ concurrency:
 
 jobs:
   deploy:
+    if: >-
+      github.event_name != 'pull_request' ||
+      (github.event.pull_request.merged == true &&
+      startsWith(github.event.pull_request.title, '[deploy]'))
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Deploy main to id.testing.hara-lang.org
-        if: github.ref_name == 'main'
+        if: >-
+          (github.event_name != 'pull_request' && github.ref_name == 'main') ||
+          (github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'main')
         run: npx --yes netlify-cli deploy --prod --dir site --message "main ${GITHUB_SHA}"
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_TESTING_SITE_ID }}
       - name: Deploy production to id.hara-lang.org
-        if: github.ref_name == 'production'
+        if: >-
+          (github.event_name != 'pull_request' && github.ref_name == 'production') ||
+          (github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'production')
         run: npx --yes netlify-cli deploy --prod --dir site --message "production ${GITHUB_SHA}"
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_PRODUCTION_SITE_ID }}
       - name: Reconcile id.testing.hara-lang.org
-        if: github.ref_name == 'main'
+        if: >-
+          (github.event_name != 'pull_request' && github.ref_name == 'main') ||
+          (github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'main')
         run: bash .github/scripts/reconcile-netlify-domain.sh
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_TESTING_SITE_ID }}
           NETLIFY_CUSTOM_DOMAIN: id.testing.hara-lang.org
       - name: Reconcile id.hara-lang.org
-        if: github.ref_name == 'production'
+        if: >-
+          (github.event_name != 'pull_request' && github.ref_name == 'production') ||
+          (github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'production')
         run: bash .github/scripts/reconcile-netlify-domain.sh
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}

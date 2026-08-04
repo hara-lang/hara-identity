@@ -67,3 +67,21 @@ if ! jq -e --arg domain "$NETLIFY_CUSTOM_DOMAIN" '
 fi
 
 echo "Netlify now routes ${NETLIFY_CUSTOM_DOMAIN}."
+
+page="$(mktemp)"
+for attempt in {1..20}; do
+  if curl --fail --silent --show-error --location --max-time 20 \
+      "https://${NETLIFY_CUSTOM_DOMAIN}/" >"$page" \
+    && grep -q 'property="og:image"' "$page" \
+    && grep -q 'property="og:image:width" content="3840"' "$page"; then
+    echo "Verified 3840px OG metadata on ${NETLIFY_CUSTOM_DOMAIN}."
+    exit 0
+  fi
+  if [[ "$attempt" -lt 20 ]]; then
+    echo "Waiting for ${NETLIFY_CUSTOM_DOMAIN} to become healthy."
+    sleep 15
+  fi
+done
+
+echo "${NETLIFY_CUSTOM_DOMAIN} did not publish the expected OG metadata." >&2
+exit 1

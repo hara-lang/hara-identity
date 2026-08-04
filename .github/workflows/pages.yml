@@ -3,7 +3,7 @@ name: Deploy id.hara-lang.org
 on:
   push:
     branches: [main, production]
-    paths: [site/**, .github/scripts/**, .github/workflows/pages.yml]
+    paths: [site/**, netlify/**, netlify.toml, test/**, package.json, .github/scripts/**, .github/workflows/pages.yml]
   pull_request:
     branches: [main, production]
     types: [closed]
@@ -25,6 +25,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Test functions
+        run: node --test test/*.mjs
       - name: Deploy main to id.testing.hara-lang.org
         if: >-
           (github.event_name != 'pull_request' && github.ref_name == 'main') ||

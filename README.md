@@ -7,6 +7,7 @@ Clients pin an exact commit of this repository in `project.lock.edn` before they
 ## Layout
 
 - `identity.edn` — root policy document and registry signer references.
+- `identity.edn.sig` — detached Ed25519 signature over the exact policy bytes.
 - `publishers/` — package-coordinate delegation records.
 - `revocations/` — append-only key and release revocations.
 - `CODEOWNERS` — review protection for trust-policy changes.

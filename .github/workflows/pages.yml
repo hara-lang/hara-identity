@@ -3,7 +3,7 @@ name: Deploy id.hara-lang.org
 on:
   push:
     branches: [main, production]
-    paths: [site/**, .github/workflows/pages.yml]
+    paths: [site/**, .github/scripts/**, .github/workflows/pages.yml]
   workflow_dispatch:
 
 permissions:
@@ -30,3 +30,17 @@ jobs:
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_PRODUCTION_SITE_ID }}
+      - name: Reconcile id.testing.hara-lang.org
+        if: github.ref_name == 'main'
+        run: bash .github/scripts/reconcile-netlify-domain.sh
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_TESTING_SITE_ID }}
+          NETLIFY_CUSTOM_DOMAIN: id.testing.hara-lang.org
+      - name: Reconcile id.hara-lang.org
+        if: github.ref_name == 'production'
+        run: bash .github/scripts/reconcile-netlify-domain.sh
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_PRODUCTION_SITE_ID }}
+          NETLIFY_CUSTOM_DOMAIN: id.hara-lang.org

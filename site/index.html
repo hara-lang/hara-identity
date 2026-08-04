@@ -21,10 +21,62 @@
   <meta name="twitter:image" content="https://id.hara-lang.org/og-hara-identity.jpg">
   <meta name="twitter:image:alt" content="Hara package identity — trust you can inspect">
   <link rel="canonical" href="https://id.hara-lang.org/">
-  <meta http-equiv="refresh" content="0; url=https://github.com/hara-lang/hara-identity">
+  <link rel="stylesheet" href="/vendor/hara-ui/tokens.css">
+  <link rel="stylesheet" href="/page.css">
   <title>Hara / Package Identity</title>
 </head>
 <body>
-  <p>Continue to the <a href="https://github.com/hara-lang/hara-identity">Hara package identity repository</a>.</p>
+  <main class="page">
+    <p class="eyebrow">HARA / PACKAGE IDENTITY</p>
+    <h1 class="hero">The public trust policy for Hara packages.</h1>
+    <p class="lede">
+      Git is the authority. This origin serves the signed policy read-only:
+      every document here is mirrored byte-for-byte from the
+      <a href="https://github.com/hara-lang/hara-identity">hara-lang/hara-identity</a>
+      repository, and clients pin an exact commit before accepting publisher
+      intents or registry attestations.
+    </p>
+
+    <nav class="links" aria-label="Identity documents">
+      <a class="card" href="/v1/identity">
+        <span class="card-label">Machine document</span>
+        <span class="card-path">/v1/identity</span>
+        <span class="card-note">Root policy as EDN, served from Git.</span>
+      </a>
+      <a class="card" href="/.well-known/hara-tap.edn">
+        <span class="card-label">Discovery</span>
+        <span class="card-path">/.well-known/hara-tap.edn</span>
+        <span class="card-note">TAP discovery document for the ecosystem.</span>
+      </a>
+      <a class="card" href="https://github.com/hara-lang/hara-identity">
+        <span class="card-label">Authority</span>
+        <span class="card-path">github.com/hara-lang/hara-identity</span>
+        <span class="card-note">The signed repository of record.</span>
+      </a>
+      <a class="card" href="https://specs.hara-lang.org">
+        <span class="card-label">Specifications</span>
+        <span class="card-path">specs.hara-lang.org</span>
+        <span class="card-note">Normative language and platform specs.</span>
+      </a>
+    </nav>
+
+    <section class="fingerprint" aria-label="Root key fingerprint">
+      <p class="fingerprint-label">Root key — ed25519</p>
+      <code class="fingerprint-value">638ad43d5840a7013e5462d0a52da429774257b8ec0a0794e6818aaa0aa835a2</code>
+    </section>
+
+    <footer class="fine-print">
+      <p>
+        Read-only mirror of the Git-authoritative trust policy. Private signing
+        material is never held or served here. Verify signatures against the
+        root key above before trusting any derived document.
+      </p>
+      <p class="colophon">
+        <a href="https://opensource.greenways.ai/open-source/">A Greenways Open Source Project</a>
+        <span aria-hidden="true">·</span>
+        <a href="https://github.com/hara-lang/hara-identity/blob/main/LICENSE">Apache-2.0</a>
+      </p>
+    </footer>
+  </main>
 </body>
 </html>

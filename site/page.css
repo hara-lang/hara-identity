@@ -1,0 +1,161 @@
+/* Landing page for id.hara-lang.org. Token variables come from
+   /vendor/hara-ui/tokens.css (vendored from specs/vendor/hara-ui). */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100vh;
+  background: var(--hara-abyss);
+  color: var(--hara-text);
+  font-family: var(--hara-display);
+  font-size: 17px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: clamp(3rem, 10vh, 7rem) 1.5rem 3rem;
+}
+
+.eyebrow {
+  margin: 0 0 1.25rem;
+  font-family: var(--hara-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.32em;
+  color: var(--hara-cyan);
+}
+
+.hero {
+  margin: 0 0 1.25rem;
+  font-size: clamp(2rem, 5.5vw, 3rem);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  background: var(--hara-spectrum);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.lede {
+  margin: 0 0 2.5rem;
+  max-width: 60ch;
+  color: var(--hara-muted);
+}
+
+.lede a {
+  color: var(--hara-cyan);
+  text-decoration: none;
+  border-bottom: 1px solid var(--hara-line-strong);
+}
+
+.lede a:hover {
+  color: var(--hara-cyan-bright);
+}
+
+.links {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 0.9rem;
+  margin: 0 0 2.5rem;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 1rem 1.1rem;
+  background: var(--hara-panel);
+  border: 1px solid var(--hara-line);
+  border-radius: 10px;
+  text-decoration: none;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.card:hover {
+  border-color: var(--hara-line-strong);
+  box-shadow: var(--hara-glow-cyan);
+}
+
+.card-label {
+  font-family: var(--hara-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--hara-faint);
+}
+
+.card-path {
+  font-family: var(--hara-mono);
+  font-size: 0.92rem;
+  color: var(--hara-cyan);
+  word-break: break-all;
+}
+
+.card-note {
+  font-size: 0.85rem;
+  color: var(--hara-muted);
+}
+
+.fingerprint {
+  margin: 0 0 2.5rem;
+  padding: 1rem 1.1rem;
+  background: var(--hara-spectrum-soft);
+  border: 1px solid var(--hara-line);
+  border-radius: 10px;
+}
+
+.fingerprint-label {
+  margin: 0 0 0.5rem;
+  font-family: var(--hara-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--hara-faint);
+}
+
+.fingerprint-value {
+  display: block;
+  font-family: var(--hara-mono);
+  font-size: 0.82rem;
+  color: var(--hara-green);
+  word-break: break-all;
+}
+
+.fine-print {
+  border-top: 1px solid var(--hara-line);
+  padding-top: 1.25rem;
+}
+
+.fine-print p {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--hara-faint);
+}
+
+.colophon {
+  margin-top: 0.75rem;
+}
+
+.colophon a {
+  color: var(--hara-muted);
+  text-decoration: none;
+}
+
+.colophon a:hover {
+  color: var(--hara-cyan);
+}
+
+.colophon span {
+  margin: 0 0.4rem;
+}

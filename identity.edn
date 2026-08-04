@@ -1,6 +1,11 @@
 {:identity/format 1
  :identity/name "hara"
- :keys {}
+ :identity/trust :github-governed
+ :identity/root-key "638ad43d5840a7013e5462d0a52da429774257b8ec0a0794e6818aaa0aa835a2"
+ :publisher-keys {}
+ :keys {:root {:algorithm :ed25519
+               :public-key "638ad43d5840a7013e5462d0a52da429774257b8ec0a0794e6818aaa0aa835a2"
+               :usage [:identity-policy]}}
  :registry-ci {:keys []}
  :policy {:signature :ed25519
           :require-publisher-intent true

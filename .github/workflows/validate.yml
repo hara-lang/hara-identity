@@ -1,0 +1,45 @@
+name: Validate identity service
+
+on:
+  pull_request:
+    paths:
+      - "netlify/**"
+      - "site/**"
+      - "test/**"
+      - "docs/**"
+      - "package.json"
+      - "netlify.toml"
+      - "README.md"
+      - ".github/workflows/validate.yml"
+  push:
+    branches: [main]
+    paths:
+      - "netlify/**"
+      - "site/**"
+      - "test/**"
+      - "docs/**"
+      - "package.json"
+      - "netlify.toml"
+      - "README.md"
+      - ".github/workflows/validate.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: identity-service-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Test identity contracts
+        run: npm test
+      - name: Verify Netlify function bundling
+        run: npx --yes netlify-cli build

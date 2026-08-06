@@ -21,3 +21,9 @@ test("the client displays the stable GitHub identity without handling provider t
   assert.match(client, /profile\.avatarUrl/);
   assert.doesNotMatch(client, /access_token|client_secret|HARA_GITHUB_OAUTH_CLIENT_SECRET/);
 });
+
+test("links the shared identity surface to Hara World", () => {
+  assert.match(page, /Home[\s\S]*World[\s\S]*Specs[\s\S]*Packages[\s\S]*Identity/);
+  assert.match(page, /https:\/\/world\.hara-lang\.org\//);
+  assert.match(page, /Profiles, announcements, community writing/);
+});

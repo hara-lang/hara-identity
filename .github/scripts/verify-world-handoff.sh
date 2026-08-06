@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+: "${HARA_IDENTITY_ORIGIN:?HARA_IDENTITY_ORIGIN is required}"
+: "${HARA_WORLD_ORIGIN:?HARA_WORLD_ORIGIN is required}"
+
+identity_origin="${HARA_IDENTITY_ORIGIN%/}"
+world_origin="${HARA_WORLD_ORIGIN%/}"
+callback="${world_origin}/api/auth/callback"
+work="$(mktemp -d)"
+trap 'rm -rf "$work"' EXIT
+
+curl --fail --silent --show-error --location --max-time 20 \
+  "${identity_origin}/.well-known/hara-handoff" >"$work/discovery.json"
+
+jq -e --arg issuer "$identity_origin" --arg callback "$callback" '
+  .issuer == $issuer
+  and .configured == true
+  and .authorizationEndpoint == ($issuer + "/v1/handoffs/authorize")
+  and .tokenEndpoint == ($issuer + "/v1/handoffs/token")
+  and (.codeChallengeMethodsSupported | index("S256") != null)
+  and any(.clients[]; .id == "world" and .redirectUri == $callback)
+' "$work/discovery.json" >/dev/null
+
+state="$(printf 'a%.0s' {1..43})"
+challenge="$(printf 'b%.0s' {1..43})"
+query="$(jq -rn \
+  --arg client_id world \
+  --arg redirect_uri "$callback" \
+  --arg state "$state" \
+  --arg code_challenge "$challenge" \
+  --arg code_challenge_method S256 \
+  '$ARGS.named | to_entries | map("\(.key)=\(.value|@uri)") | join("&")')"
+authorize_url="${identity_origin}/v1/handoffs/authorize?${query}"
+
+status="$(curl --silent --show-error --max-time 20 \
+  --dump-header "$work/authorize.headers" \
+  --output "$work/authorize.body" \
+  --write-out '%{http_code}' \
+  "$authorize_url")"
+[[ "$status" == "302" ]]
+location="$(awk 'BEGIN{IGNORECASE=1} /^location:/ {sub(/^location:[[:space:]]*/, ""); sub(/\r$/, ""); print; exit}' "$work/authorize.headers")"
+node - "$location" "$identity_origin" "$authorize_url" <<'NODE'
+const [location, issuer, authorize] = process.argv.slice(2);
+const redirect = new URL(location);
+if (redirect.origin !== issuer || redirect.pathname !== "/github/start") process.exit(1);
+if (redirect.searchParams.get("returnTo") !== authorize) process.exit(1);
+NODE
+
+status="$(curl --silent --show-error --max-time 20 \
+  --output "$work/token.json" \
+  --write-out '%{http_code}' \
+  --request POST \
+  --header 'Authorization: Basic d29ybGQ6d3Jvbmc=' \
+  --header 'Content-Type: application/x-www-form-urlencoded' \
+  --data 'grant_type=authorization_code&code=invalid&code_verifier=invalid' \
+  "${identity_origin}/v1/handoffs/token")"
+[[ "$status" == "401" ]]
+jq -e '.error.code == "HANDOFF_CLIENT_INVALID"' "$work/token.json" >/dev/null
+
+echo "Verified the World identity handoff at ${identity_origin}."

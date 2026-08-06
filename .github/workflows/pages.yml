@@ -3,7 +3,7 @@ name: Deploy id.hara-lang.org
 on:
   push:
     branches: [main, production]
-    paths: [site/**, netlify/**, netlify.toml, test/**, package.json, .github/scripts/**, .github/workflows/pages.yml]
+    paths: [site/**, netlify/**, netlify.toml, test/**, package.json, README.md, docs/**, .github/scripts/**, .github/workflows/pages.yml]
   pull_request:
     branches: [main, production]
     types: [closed]
@@ -25,7 +25,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Test functions
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Test functions and identity client
         run: node --test test/*.mjs
       - name: Deploy main to id.testing.hara-lang.org
         if: >-
@@ -52,6 +55,14 @@ jobs:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_TESTING_SITE_ID }}
           NETLIFY_CUSTOM_DOMAIN: id.testing.hara-lang.org
+      - name: Verify testing identity contract
+        if: >-
+          (github.event_name != 'pull_request' && github.ref_name == 'main') ||
+          (github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'main')
+        run: bash .github/scripts/verify-identity-service.sh
+        env:
+          HARA_IDENTITY_ORIGIN: https://id.testing.hara-lang.org
+          HARA_IDENTITY_EXPECTED_RETURN_ORIGIN: https://www.testing.hara-lang.org
       - name: Reconcile id.hara-lang.org
         if: >-
           (github.event_name != 'pull_request' && github.ref_name == 'production') ||
@@ -61,3 +72,11 @@ jobs:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_PRODUCTION_SITE_ID }}
           NETLIFY_CUSTOM_DOMAIN: id.hara-lang.org
+      - name: Verify production identity contract
+        if: >-
+          (github.event_name != 'pull_request' && github.ref_name == 'production') ||
+          (github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'production')
+        run: bash .github/scripts/verify-identity-service.sh
+        env:
+          HARA_IDENTITY_ORIGIN: https://id.hara-lang.org
+          HARA_IDENTITY_EXPECTED_RETURN_ORIGIN: https://www.hara-lang.org

@@ -3,7 +3,7 @@ name: Deploy id.hara-lang.org
 on:
   push:
     branches: [main, production]
-    paths: [site/**, netlify/**, netlify.toml, test/**, package.json, .github/scripts/**, .github/workflows/pages.yml]
+    paths: [site/**, netlify/**, netlify.toml, test/**, package.json, README.md, docs/**, .github/scripts/**, .github/workflows/pages.yml]
   pull_request:
     branches: [main, production]
     types: [closed]
@@ -25,7 +25,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Test functions
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Test functions and identity client
         run: node --test test/*.mjs
       - name: Deploy main to id.testing.hara-lang.org
         if: >-

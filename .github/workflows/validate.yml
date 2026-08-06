@@ -10,6 +10,8 @@ on:
       - "package.json"
       - "netlify.toml"
       - "README.md"
+      - ".github/scripts/**"
+      - ".github/workflows/pages.yml"
       - ".github/workflows/validate.yml"
   push:
     branches: [main]
@@ -21,6 +23,8 @@ on:
       - "package.json"
       - "netlify.toml"
       - "README.md"
+      - ".github/scripts/**"
+      - ".github/workflows/pages.yml"
       - ".github/workflows/validate.yml"
   workflow_dispatch:
 
@@ -39,6 +43,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Check deployment scripts
+        run: bash -n .github/scripts/*.sh
       - name: Test identity contracts
         run: npm test
       - name: Verify Netlify function bundling

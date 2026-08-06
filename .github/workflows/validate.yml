@@ -22,6 +22,7 @@ on:
       - "netlify.toml"
       - "README.md"
       - ".github/workflows/validate.yml"
+  workflow_dispatch:
 
 permissions:
   contents: read

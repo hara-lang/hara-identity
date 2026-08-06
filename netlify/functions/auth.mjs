@@ -37,14 +37,14 @@ export const config = {
   path: [
     "/github/start",
     "/auth/github",
-    CALLBACK_PATH,
+    "/auth/github/callback",
     "/session",
     "/api/v1/session",
     "/api/auth/session",
     "/logout",
     "/api/v1/logout",
     "/auth/logout",
-    DISCOVERY_PATH,
+    "/.well-known/hara-session",
   ],
 };
 

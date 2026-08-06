@@ -45,7 +45,7 @@ jobs:
         run: npx --yes netlify-cli deploy --prod --dir site --message "production ${GITHUB_SHA}"
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_TESTING_SITE_ID }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_PRODUCTION_SITE_ID }}
       - name: Reconcile id.testing.hara-lang.org
         if: >-
           (github.event_name != 'pull_request' && github.ref_name == 'main') ||

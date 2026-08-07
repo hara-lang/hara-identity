@@ -11,7 +11,7 @@ const SCRIPT = join(
   "..",
   ".github",
   "scripts",
-  "verify-identity-service.sh",
+  "verify-identity-consumer.sh",
 );
 
 function json(response, status, payload, headers = {}) {
@@ -39,9 +39,9 @@ function runVerifier(env) {
   });
 }
 
-test("deployment probe verifies the live identity boundary and fails closed", async (t) => {
+test("consumer probe verifies the live identity boundary and fails closed", async (t) => {
   let configured = true;
-  const returnOrigin = "http://127.0.0.1:9876";
+  const consumerOrigin = "http://127.0.0.1:9876";
   let origin;
 
   const server = createServer((request, response) => {
@@ -49,13 +49,17 @@ test("deployment probe verifies the live identity boundary and fails closed", as
 
     if (request.method === "GET" && url.pathname === "/.well-known/hara-session") {
       return json(response, 200, {
+        contractVersion: 1,
+        clientVersion: 1,
         issuer: origin,
         provider: "github",
         authorizationEndpoint: `${origin}/github/start`,
         callbackEndpoint: `${origin}/auth/github/callback`,
         sessionEndpoint: `${origin}/session`,
         logoutEndpoint: `${origin}/logout`,
-        allowedOrigins: [returnOrigin],
+        clientEndpoint: `${origin}/v1/identity-client.js`,
+        legacyClientEndpoint: `${origin}/identity-client.js`,
+        allowedOrigins: [consumerOrigin],
         configured,
       });
     }
@@ -98,7 +102,10 @@ test("deployment probe verifies the live identity boundary and fails closed", as
       return response.end();
     }
 
-    if (request.method === "GET" && url.pathname === "/identity-client.js") {
+    if (
+      request.method === "GET"
+      && (url.pathname === "/identity-client.js" || url.pathname === "/v1/identity-client.js")
+    ) {
       response.writeHead(200, { "content-type": "application/javascript" });
       return response.end("globalThis.HaraIdentity = {};\n");
     }
@@ -124,15 +131,16 @@ test("deployment probe verifies the live identity boundary and fails closed", as
 
   const ready = await runVerifier({
     HARA_IDENTITY_ORIGIN: origin,
-    HARA_IDENTITY_EXPECTED_RETURN_ORIGIN: returnOrigin,
+    HARA_CONSUMER_ORIGIN: consumerOrigin,
   });
   assert.equal(ready.code, 0, ready.stderr);
   assert.match(ready.stdout, /Verified GitHub OAuth readiness/);
+  assert.match(ready.stdout, /contract v1/);
 
   configured = false;
   const unconfigured = await runVerifier({
     HARA_IDENTITY_ORIGIN: origin,
-    HARA_IDENTITY_EXPECTED_RETURN_ORIGIN: returnOrigin,
+    HARA_CONSUMER_ORIGIN: consumerOrigin,
   });
   assert.notEqual(unconfigured.code, 0);
   assert.match(unconfigured.stderr, /not production-ready/);

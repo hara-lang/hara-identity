@@ -31,6 +31,13 @@ test("keeps full-page sign-in as the blocked-popup and no-JavaScript fallback", 
   assert.match(client, /unmodifiedPrimaryClick/);
 });
 
+test("uses global logout when advertised and the legacy POST endpoint otherwise", () => {
+  assert.match(client, /globalLogoutEndpoint/);
+  assert.match(client, /endpoint\.pathname !== "\/logout\/global"/);
+  assert.match(client, /fetch\(new URL\("\/logout", identityOrigin\)/);
+  assert.match(client, /method: "POST"/);
+});
+
 test("the popup protocol carries no provider token or client secret", () => {
   assert.doesNotMatch(client, /access_token|client_secret|HARA_GITHUB_OAUTH_CLIENT_SECRET/);
   assert.match(client, /crypto\.getRandomValues/);

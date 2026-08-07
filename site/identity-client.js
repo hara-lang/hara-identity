@@ -84,10 +84,24 @@
     return url.href;
   }
 
-  function globalLogoutUrl() {
-    const url = new URL("/logout/global", identityOrigin);
-    url.searchParams.set("returnTo", cleanReturnUrl().href);
-    return url.href;
+  async function advertisedGlobalLogoutUrl() {
+    try {
+      const response = await fetch(new URL("/.well-known/hara-session", identityOrigin), {
+        credentials: "include",
+        mode: "cors",
+        cache: "no-store",
+        headers: { Accept: "application/json" },
+      });
+      if (!response.ok) return null;
+      const discovery = await response.json();
+      if (typeof discovery?.globalLogoutEndpoint !== "string") return null;
+      const endpoint = new URL(discovery.globalLogoutEndpoint, identityOrigin);
+      if (endpoint.origin !== identityOrigin || endpoint.pathname !== "/logout/global") return null;
+      endpoint.searchParams.set("returnTo", cleanReturnUrl().href);
+      return endpoint.href;
+    } catch {
+      return null;
+    }
   }
 
   function popupNonce() {
@@ -333,11 +347,31 @@
   }
 
   async function signOut() {
+    const globalLogout = await advertisedGlobalLogoutUrl();
+    if (globalLogout) {
+      for (const root of roots()) renderSignedOut(root, true);
+      dispatchEvent(new CustomEvent("hara:identity-change", {
+        detail: { authenticated: false, configured: true, profile: null, user: null, identity: null },
+      }));
+      location.assign(globalLogout);
+      return;
+    }
+
+    const response = await fetch(new URL("/logout", identityOrigin), {
+      method: "POST",
+      credentials: "include",
+      mode: "cors",
+      cache: "no-store",
+      headers: {
+        Accept: "application/json",
+        "X-Hara-Request": "sign-out",
+      },
+    });
+    if (!response.ok) throw new Error(`HARA_IDENTITY_LOGOUT_${response.status}`);
     for (const root of roots()) renderSignedOut(root, true);
     dispatchEvent(new CustomEvent("hara:identity-change", {
       detail: { authenticated: false, configured: true, profile: null, user: null, identity: null },
     }));
-    location.assign(globalLogoutUrl());
   }
 
   function unmodifiedPrimaryClick(event) {

@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/recover-world-testing.yml"
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -39,6 +40,19 @@ jobs:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: 13d913c8-553b-4c1b-8de9-8ace2ff35d5e
         run: npx --yes netlify-cli deploy --prod --dir dist --message "World recovery ${GITHUB_SHA}"
+      - name: Print public readiness diagnostics
+        run: |
+          set -u
+          echo '--- Identity session discovery'
+          curl --silent --show-error --max-time 30 https://id.testing.hara-lang.org/.well-known/hara-session | jq .
+          echo '--- Identity handoff discovery'
+          curl --silent --show-error --max-time 30 https://id.testing.hara-lang.org/.well-known/hara-handoff | jq .
+          echo '--- World discovery'
+          curl --silent --show-error --max-time 30 https://world.testing.hara-lang.org/.well-known/hara-world | jq .
+          echo '--- World active readiness'
+          curl --silent --show-error --max-time 30 https://world.testing.hara-lang.org/.well-known/hara-world-readiness | jq .
+          echo '--- World unauthenticated session'
+          curl --silent --show-error --max-time 30 https://world.testing.hara-lang.org/api/auth/session | jq .
       - name: Verify World testing and the shared Identity contract
         working-directory: world
         env:

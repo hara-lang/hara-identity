@@ -14,6 +14,11 @@ export const config = {
     "/v1/handoffs/authorize",
     "/v1/handoffs/token",
   ],
+  rateLimit: {
+    windowLimit: 300,
+    windowSize: 60,
+    aggregateBy: ["ip", "domain"],
+  },
 };
 
 export async function handle(request, options = {}) {

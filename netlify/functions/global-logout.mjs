@@ -4,19 +4,39 @@ import {
   safeReturnTo,
 } from "./auth-lib.mjs";
 
-function worldOrigin(requestUrl) {
+const FIRST_PARTY_RELYING_ORIGINS = Object.freeze({
+  production: Object.freeze([
+    "https://world.hara-lang.org",
+    "https://docs.hara-lang.org",
+    "https://playground.hara-lang.org",
+  ]),
+  testing: Object.freeze([
+    "https://world.testing.hara-lang.org",
+    "https://docs.testing.hara-lang.org",
+    "https://playground.testing.hara-lang.org",
+  ]),
+});
+
+function isTestingIdentity(requestUrl) {
   const request = new URL(requestUrl);
-  return request.hostname === "id.testing.hara-lang.org" || request.hostname.endsWith(".testing.hara-lang.org")
+  return request.hostname === "id.testing.hara-lang.org"
+    || request.hostname.endsWith(".testing.hara-lang.org");
+}
+
+function worldOrigin(requestUrl) {
+  return isTestingIdentity(requestUrl)
     ? "https://world.testing.hara-lang.org"
     : "https://world.hara-lang.org";
 }
 
 function effectiveEnv(env, requestUrl) {
-  const world = worldOrigin(requestUrl);
   const configured = env?.HARA_AUTH_ALLOWED_ORIGINS || env?.AUTH_ALLOWED_ORIGINS || "";
+  const origins = isTestingIdentity(requestUrl)
+    ? FIRST_PARTY_RELYING_ORIGINS.testing
+    : FIRST_PARTY_RELYING_ORIGINS.production;
   return {
     ...env,
-    HARA_AUTH_ALLOWED_ORIGINS: [configured, world].filter(Boolean).join(","),
+    HARA_AUTH_ALLOWED_ORIGINS: [configured, ...origins].filter(Boolean).join(","),
   };
 }
 

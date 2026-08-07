@@ -50,6 +50,11 @@ export const config = {
     "/auth/logout",
     "/.well-known/hara-session",
   ],
+  rateLimit: {
+    windowLimit: 240,
+    windowSize: 60,
+    aggregateBy: ["ip", "domain"],
+  },
 };
 
 function envWithFirstPartyWorldOrigin(env, requestUrl) {
@@ -110,15 +115,14 @@ function handleDiscovery(request, env) {
     callbackEndpoint: `${origin}/auth/github/callback`,
     sessionEndpoint: `${origin}/session`,
     logoutEndpoint: `${origin}/logout`,
+    globalLogoutEndpoint: `${origin}/logout/global`,
     allowedOrigins: [...allowedOrigins(env, request.url)].sort(),
     configured: isAuthConfigured(env),
   }, { method: request.method });
 }
 
 function handleStart(request, env) {
-  if (request.method !== "GET") {
-    return methodNotAllowed(request.method, ["GET"]);
-  }
+  if (request.method !== "GET") return methodNotAllowed(request.method, ["GET"]);
   const url = new URL(request.url);
   const oauth = readOAuthConfig(env, request.url);
   const attempt = createOAuthAttempt(
@@ -133,16 +137,11 @@ function handleStart(request, env) {
     challenge: attempt.challenge,
     scope: oauth.scope,
   });
-  return redirectResponse(location, {
-    cookies: oauthAttemptCookies(attempt, request.url),
-  });
+  return redirectResponse(location, { cookies: oauthAttemptCookies(attempt, request.url) });
 }
 
 async function handleCallback(request, env, fetchImpl, now) {
-  if (request.method !== "GET") {
-    return methodNotAllowed(request.method, ["GET"]);
-  }
-
+  if (request.method !== "GET") return methodNotAllowed(request.method, ["GET"]);
   const oauth = readOAuthConfig(env, request.url);
   const callback = assertOAuthCallback({
     requestUrl: request.url,
@@ -163,25 +162,17 @@ async function handleCallback(request, env, fetchImpl, now) {
   });
   return redirectResponse(callback.returnTo, {
     status: 302,
-    cookies: [
-      ...clearOAuthCookies(request.url),
-      sessionCookie(token, request.url),
-    ],
+    cookies: [...clearOAuthCookies(request.url), sessionCookie(token, request.url)],
   });
 }
 
 function handleSession(request, env, now) {
   const methods = ["GET", "HEAD", "OPTIONS"];
   let cors;
-  try {
-    cors = withCors(request, env, methods);
-  } catch (error) {
-    return jsonResponse({ error: { code: error.code, message: error.message } }, { status: error.status });
-  }
+  try { cors = withCors(request, env, methods); }
+  catch (error) { return jsonResponse({ error: { code: error.code, message: error.message } }, { status: error.status }); }
   if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
-  if (request.method !== "GET" && request.method !== "HEAD") {
-    return methodNotAllowed(request.method, ["GET", "HEAD", "OPTIONS"], cors);
-  }
+  if (request.method !== "GET" && request.method !== "HEAD") return methodNotAllowed(request.method, methods, cors);
 
   const configured = isAuthConfigured(env);
   let profile = null;
@@ -192,25 +183,16 @@ function handleSession(request, env, now) {
       now,
     });
   }
-
-  return jsonResponse(sessionPayload(profile, configured), {
-    method: request.method,
-    headers: cors,
-  });
+  return jsonResponse(sessionPayload(profile, configured), { method: request.method, headers: cors });
 }
 
 function handleLogout(request, env) {
   const methods = ["POST", "OPTIONS"];
   let cors;
-  try {
-    cors = withCors(request, env, methods);
-  } catch (error) {
-    return jsonResponse({ error: { code: error.code, message: error.message } }, { status: error.status });
-  }
+  try { cors = withCors(request, env, methods); }
+  catch (error) { return jsonResponse({ error: { code: error.code, message: error.message } }, { status: error.status }); }
   if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
-  if (request.method !== "POST") {
-    return methodNotAllowed(request.method, ["POST", "OPTIONS"], cors);
-  }
+  if (request.method !== "POST") return methodNotAllowed(request.method, methods, cors);
 
   const headers = responseHeaders();
   cors.forEach((value, key) => headers.set(key, value));

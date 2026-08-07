@@ -71,6 +71,12 @@
     return url.href;
   }
 
+  function globalLogoutUrl() {
+    const url = new URL("/logout/global", identityOrigin);
+    url.searchParams.set("returnTo", location.href);
+    return url.href;
+  }
+
   function renderSignedOut(root, configured = true) {
     ensureMarkup(root);
     root.dataset.state = "signed-out";
@@ -145,21 +151,11 @@
   }
 
   async function signOut() {
-    const response = await fetch(new URL("/logout", identityOrigin), {
-      method: "POST",
-      credentials: "include",
-      mode: "cors",
-      cache: "no-store",
-      headers: {
-        Accept: "application/json",
-        "X-Hara-Request": "sign-out",
-      },
-    });
-    if (!response.ok) throw new Error(`HARA_IDENTITY_LOGOUT_${response.status}`);
     for (const root of roots()) renderSignedOut(root, true);
     dispatchEvent(new CustomEvent("hara:identity-change", {
       detail: { authenticated: false, configured: true, profile: null, user: null, identity: null },
     }));
+    location.assign(globalLogoutUrl());
   }
 
   document.addEventListener("click", (event) => {
@@ -169,7 +165,7 @@
     if (!button) return;
     event.preventDefault();
     button.disabled = true;
-    signOut().catch(() => {}).finally(() => { button.disabled = false; });
+    signOut().catch(() => { button.disabled = false; });
   });
 
   const initialise = () => refresh().catch(() => {});

@@ -32,6 +32,8 @@ const CALLBACK_PATH = "/auth/github/callback";
 const SESSION_PATHS = new Set(["/session", "/api/v1/session", "/api/auth/session"]);
 const LOGOUT_PATHS = new Set(["/logout", "/api/v1/logout", "/auth/logout"]);
 const DISCOVERY_PATH = "/.well-known/hara-session";
+const IDENTITY_CONTRACT_VERSION = 1;
+const IDENTITY_CLIENT_VERSION = 1;
 const WORLD_ORIGINS = Object.freeze({
   production: "https://world.hara-lang.org",
   testing: "https://world.testing.hara-lang.org",
@@ -104,12 +106,16 @@ function handleDiscovery(request, env) {
   }
   const origin = new URL(request.url).origin;
   return jsonResponse({
+    contractVersion: IDENTITY_CONTRACT_VERSION,
+    clientVersion: IDENTITY_CLIENT_VERSION,
     issuer: origin,
     provider: "github",
     authorizationEndpoint: `${origin}/github/start`,
     callbackEndpoint: `${origin}/auth/github/callback`,
     sessionEndpoint: `${origin}/session`,
     logoutEndpoint: `${origin}/logout`,
+    clientEndpoint: `${origin}/v1/identity-client.js`,
+    legacyClientEndpoint: `${origin}/identity-client.js`,
     allowedOrigins: [...allowedOrigins(env, request.url)].sort(),
     configured: isAuthConfigured(env),
   }, { method: request.method });

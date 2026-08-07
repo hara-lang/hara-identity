@@ -78,17 +78,23 @@ if ! grep -qi '^set-cookie: hara_identity_session=;.*Max-Age=0' "$work/logout.he
   echo "Front-channel logout did not clear the central Identity cookie." >&2
   exit 1
 fi
+
+# The final same-origin World hop is an HTML bridge. Netlify otherwise propagates the source endpoint's query parameters onto a same-origin HTTP redirect.
 status="$(curl --silent --show-error --max-time 20 \
   --dump-header "$work/world-logout.headers" \
-  --output /dev/null \
+  --output "$work/world-logout.html" \
   --write-out '%{http_code}' \
   "$location")"
-[[ "$status" == "302" ]]
+[[ "$status" == "200" ]]
 if ! grep -qi '^set-cookie: hara_world_session=;.*Max-Age=0' "$work/world-logout.headers"; then
   echo "Front-channel logout did not clear the World cookie." >&2
   exit 1
 fi
-world_return="$(awk 'BEGIN{IGNORECASE=1} /^location:/ {sub(/^location:[[:space:]]*/, ""); sub(/\r$/, ""); print; exit}' "$work/world-logout.headers")"
-[[ "$world_return" == "$return_to" ]]
+grep -q "data-hara-logout-return href=\"${return_to}\"" "$work/world-logout.html"
+grep -q 'location.replace' "$work/world-logout.html"
+if grep -Eq 'source=hara-identity|returnTo=' "$work/world-logout.html"; then
+  echo "The World logout bridge leaked its source query into the return document." >&2
+  exit 1
+fi
 
-echo "Verified the World identity handoff and global logout at ${identity_origin}."
+echo "Verified the World identity handoff and exact global logout at ${identity_origin}."

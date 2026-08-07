@@ -34,9 +34,17 @@ const LOGOUT_PATHS = new Set(["/logout", "/api/v1/logout", "/auth/logout"]);
 const DISCOVERY_PATH = "/.well-known/hara-session";
 const IDENTITY_CONTRACT_VERSION = 1;
 const IDENTITY_CLIENT_VERSION = 1;
-const WORLD_ORIGINS = Object.freeze({
-  production: "https://world.hara-lang.org",
-  testing: "https://world.testing.hara-lang.org",
+const FIRST_PARTY_RELYING_ORIGINS = Object.freeze({
+  production: Object.freeze([
+    "https://world.hara-lang.org",
+    "https://docs.hara-lang.org",
+    "https://playground.hara-lang.org",
+  ]),
+  testing: Object.freeze([
+    "https://world.testing.hara-lang.org",
+    "https://docs.testing.hara-lang.org",
+    "https://playground.testing.hara-lang.org",
+  ]),
 });
 
 export const config = {
@@ -59,17 +67,19 @@ export const config = {
   },
 };
 
-function envWithFirstPartyWorldOrigin(env, requestUrl) {
+function envWithFirstPartyOrigins(env, requestUrl) {
   const request = new URL(requestUrl);
   const isTesting = request.hostname === "id.testing.hara-lang.org"
     || request.hostname.endsWith(".testing.hara-lang.org");
   const configured = env?.HARA_AUTH_ALLOWED_ORIGINS
     || env?.AUTH_ALLOWED_ORIGINS
     || "";
-  const worldOrigin = isTesting ? WORLD_ORIGINS.testing : WORLD_ORIGINS.production;
+  const relyingOrigins = isTesting
+    ? FIRST_PARTY_RELYING_ORIGINS.testing
+    : FIRST_PARTY_RELYING_ORIGINS.production;
   return {
     ...env,
-    HARA_AUTH_ALLOWED_ORIGINS: [configured, worldOrigin].filter(Boolean).join(","),
+    HARA_AUTH_ALLOWED_ORIGINS: [configured, ...relyingOrigins].filter(Boolean).join(","),
   };
 }
 
@@ -212,7 +222,7 @@ export async function handle(request, {
   now = Date.now(),
 } = {}) {
   const url = new URL(request.url);
-  const effectiveEnv = envWithFirstPartyWorldOrigin(env, request.url);
+  const effectiveEnv = envWithFirstPartyOrigins(env, request.url);
   try {
     if (url.pathname === DISCOVERY_PATH) return handleDiscovery(request, effectiveEnv);
     if (START_PATHS.has(url.pathname)) return handleStart(request, effectiveEnv);

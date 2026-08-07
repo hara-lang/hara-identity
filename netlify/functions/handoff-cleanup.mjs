@@ -6,6 +6,4 @@ export default async function cleanupHandoffs() {
   console.log("Purged expired Hara identity handoffs", { removed });
 }
 
-export const config = {
-  schedule: "@daily",
-};
+export const config = { schedule: "@hourly" };

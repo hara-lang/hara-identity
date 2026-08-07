@@ -27,13 +27,16 @@ GET  /github/start?returnTo=<approved absolute URL>
 GET  /auth/github/callback
 GET  /session
 POST /logout
+GET  /logout/global?returnTo=<approved absolute URL>
 ```
 
 Compatibility aliases are retained at `/auth/github`, `/api/v1/session`, `/api/auth/session`, `/api/v1/logout`, and `/auth/logout`.
 
 The authorization request uses an unpredictable `state` value and S256 PKCE. The temporary GitHub access token is used only to read the stable numeric account ID and current login from GitHub; it is not placed in the Hara session or retained by the service. The signed session lasts seven days.
 
-The browser client at `/identity-client.js` renders the same account control on www, World, Specs, Packages, and Identity. It shows the GitHub avatar/login after reading `/session` and signs out centrally through `/logout`.
+The browser client at `/identity-client.js` renders the same account control on www, World, Specs, Packages, and Identity. It shows the GitHub avatar/login after reading `/session`. Its sign-out control uses the front-channel global logout: Identity clears its host-only cookie, World clears its separate host-only cookie, and the browser returns to the exact approved Hara page that initiated logout. See [`docs/global-logout.md`](docs/global-logout.md).
+
+OAuth, handoff, and global-logout Functions are rate-limited at the deployment edge. Expired handoff codes are purged hourly.
 
 ## World session handoff
 

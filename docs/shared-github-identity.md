@@ -2,11 +2,11 @@
 
 ## Goal
 
-A person who signs in on any approved Hara site should see the same stable GitHub identity on www, Specs, Packages, and Identity without repeating OAuth on every origin.
+A person who signs in on any approved Hara site should see the same stable GitHub identity on www, Specs, Packages, World, and Identity without repeating OAuth on every origin.
 
 ## Boundary
 
-`id.hara-lang.org` is the only OAuth relying party and the only origin that receives the Hara session cookie. The cookie is host-only; it is not a `Domain=.hara-lang.org` cookie and is therefore never attached to requests for www, Specs, or Packages.
+`id.hara-lang.org` is the only OAuth relying party and the only origin that receives the Hara session cookie. The cookie is host-only; it is not a `Domain=.hara-lang.org` cookie and is therefore never attached to requests for www, Specs, Packages, or World.
 
 Each relying site asks the identity origin for session state:
 
@@ -22,8 +22,10 @@ Because the Hara sites are same-site but different origins, the browser can send
 
 ## Sign-in flow
 
+The default mode remains a full-page redirect:
+
 ```text
-www | specs | packages | id
+www | specs | packages | world | id
   -> id.hara-lang.org/github/start?returnTo=<exact approved URL>
   -> GitHub authorization (state + S256 PKCE)
   -> id.hara-lang.org/auth/github/callback
@@ -32,6 +34,29 @@ www | specs | packages | id
   -> signed Hara session cookie on id.hara-lang.org
   -> original approved Hara URL
 ```
+
+A relying site can opt into popup mode with:
+
+```html
+<meta name="hara-identity-mode" content="popup">
+```
+
+Popup mode keeps the relying page in place:
+
+```text
+www page
+  -> synchronously opens a small blank window
+  -> clears that window's opener before navigating to GitHub
+  -> completes the normal Identity OAuth flow in the popup
+  -> returns to the exact original www origin with a random completion nonce
+  -> signals the parent through same-origin BroadcastChannel or storage
+  -> closes the popup
+  -> parent refreshes /session and renders the GitHub account
+```
+
+The OAuth popup never receives a provider token in browser code. Its initial blank document loses `window.opener` before any GitHub content loads, so GitHub cannot navigate the relying page through the opener relationship. The random completion nonce is correlation data only; authentication still comes exclusively from the host-only Identity session cookie.
+
+If the browser blocks the popup, BroadcastChannel/storage is unavailable, or JavaScript is disabled, the existing full-page sign-in URL remains the fallback. Modified clicks keep ordinary link behavior.
 
 The `returnTo` value must parse to an exact allowlisted origin. Substring matches, suffix tricks, protocol-relative URLs, credentials, and non-HTTP schemes are rejected.
 
@@ -53,7 +78,7 @@ The current avatar and profile URLs are derived from the numeric account ID and 
 
 ## CORS and sign-out
 
-`/session` and `/logout` echo `Access-Control-Allow-Origin` only for an exact approved origin and include `Access-Control-Allow-Credentials: true`. Unknown origins receive no readable session response. Sign-out is a credentialed POST to the central origin and clears the host-only session cookie.
+`/session` and `/logout` echo `Access-Control-Allow-Origin` only for an exact approved origin and include `Access-Control-Allow-Credentials: true`. Unknown origins receive no readable session response. The shared account control uses front-channel global logout so Identity and World can each clear their separate host-only cookies before returning to the initiating approved page.
 
 ## Production and testing
 

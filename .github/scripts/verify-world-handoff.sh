@@ -58,4 +58,37 @@ status="$(curl --silent --show-error --max-time 20 \
 [[ "$status" == "401" ]]
 jq -e '.error.code == "HANDOFF_CLIENT_INVALID"' "$work/token.json" >/dev/null
 
-echo "Verified the World identity handoff at ${identity_origin}."
+return_to="${world_origin}/me"
+encoded_return="$(jq -rn --arg value "$return_to" '$value|@uri')"
+status="$(curl --silent --show-error --max-time 20 \
+  --dump-header "$work/logout.headers" \
+  --output /dev/null \
+  --write-out '%{http_code}' \
+  "${identity_origin}/logout/global?returnTo=${encoded_return}")"
+[[ "$status" == "302" ]]
+location="$(awk 'BEGIN{IGNORECASE=1} /^location:/ {sub(/^location:[[:space:]]*/, ""); sub(/\r$/, ""); print; exit}' "$work/logout.headers")"
+node - "$location" "$world_origin" "$return_to" <<'NODE'
+const [location, world, returnTo] = process.argv.slice(2);
+const redirect = new URL(location);
+if (redirect.origin !== world || redirect.pathname !== "/api/auth/logout") process.exit(1);
+if (redirect.searchParams.get("source") !== "hara-identity") process.exit(1);
+if (redirect.searchParams.get("returnTo") !== returnTo) process.exit(1);
+NODE
+if ! grep -qi '^set-cookie: hara_identity_session=;.*Max-Age=0' "$work/logout.headers"; then
+  echo "Front-channel logout did not clear the central Identity cookie." >&2
+  exit 1
+fi
+status="$(curl --silent --show-error --max-time 20 \
+  --dump-header "$work/world-logout.headers" \
+  --output /dev/null \
+  --write-out '%{http_code}' \
+  "$location")"
+[[ "$status" == "302" ]]
+if ! grep -qi '^set-cookie: hara_world_session=;.*Max-Age=0' "$work/world-logout.headers"; then
+  echo "Front-channel logout did not clear the World cookie." >&2
+  exit 1
+fi
+world_return="$(awk 'BEGIN{IGNORECASE=1} /^location:/ {sub(/^location:[[:space:]]*/, ""); sub(/\r$/, ""); print; exit}' "$work/world-logout.headers")"
+[[ "$world_return" == "$return_to" ]]
+
+echo "Verified the World identity handoff and global logout at ${identity_origin}."

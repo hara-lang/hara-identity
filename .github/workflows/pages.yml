@@ -57,22 +57,22 @@ jobs:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_TESTING_SITE_ID }}
           NETLIFY_CUSTOM_DOMAIN: id.testing.hara-lang.org
-      - name: Verify testing identity contract
+      - name: Verify every testing relying origin
         if: >-
           (github.event_name != 'pull_request' && github.ref_name == 'main') ||
           (github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'main')
-        run: bash .github/scripts/verify-identity-service.sh
         env:
           HARA_IDENTITY_ORIGIN: https://id.testing.hara-lang.org
-          HARA_IDENTITY_EXPECTED_RETURN_ORIGIN: https://www.testing.hara-lang.org
-      - name: Verify testing World relying origin
-        if: >-
-          (github.event_name != 'pull_request' && github.ref_name == 'main') ||
-          (github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'main')
-        run: bash .github/scripts/verify-identity-service.sh
-        env:
-          HARA_IDENTITY_ORIGIN: https://id.testing.hara-lang.org
-          HARA_IDENTITY_EXPECTED_RETURN_ORIGIN: https://world.testing.hara-lang.org
+        run: |
+          for consumer in \
+            https://www.testing.hara-lang.org \
+            https://specs.testing.hara-lang.org \
+            https://packages.testing.hara-lang.org \
+            https://id.testing.hara-lang.org \
+            https://world.testing.hara-lang.org; do
+            HARA_CONSUMER_ORIGIN="$consumer" \
+              bash .github/scripts/verify-identity-consumer.sh
+          done
       - name: Verify testing World session handoff
         if: >-
           (github.event_name != 'pull_request' && github.ref_name == 'main') ||
@@ -90,22 +90,22 @@ jobs:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_PRODUCTION_SITE_ID }}
           NETLIFY_CUSTOM_DOMAIN: id.hara-lang.org
-      - name: Verify production identity contract
+      - name: Verify every production relying origin
         if: >-
           (github.event_name != 'pull_request' && github.ref_name == 'production') ||
           (github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'production')
-        run: bash .github/scripts/verify-identity-service.sh
         env:
           HARA_IDENTITY_ORIGIN: https://id.hara-lang.org
-          HARA_IDENTITY_EXPECTED_RETURN_ORIGIN: https://www.hara-lang.org
-      - name: Verify production World relying origin
-        if: >-
-          (github.event_name != 'pull_request' && github.ref_name == 'production') ||
-          (github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'production')
-        run: bash .github/scripts/verify-identity-service.sh
-        env:
-          HARA_IDENTITY_ORIGIN: https://id.hara-lang.org
-          HARA_IDENTITY_EXPECTED_RETURN_ORIGIN: https://world.hara-lang.org
+        run: |
+          for consumer in \
+            https://www.hara-lang.org \
+            https://specs.hara-lang.org \
+            https://packages.hara-lang.org \
+            https://id.hara-lang.org \
+            https://world.hara-lang.org; do
+            HARA_CONSUMER_ORIGIN="$consumer" \
+              bash .github/scripts/verify-identity-consumer.sh
+          done
       - name: Verify production World session handoff
         if: >-
           (github.event_name != 'pull_request' && github.ref_name == 'production') ||

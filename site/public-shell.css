@@ -1,0 +1,197 @@
+/* Hara public-site shell, aligned with www.hara-lang.org and the
+   hara-lang/visual-language precision-material specification. */
+
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
+
+.site-header {
+  position: fixed;
+  z-index: 40;
+  inset: 0 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  min-height: 64px;
+  padding: 0 var(--hara-space-page);
+  border-bottom: 1px solid var(--hara-line);
+  background: color-mix(in srgb, var(--hara-bg) 84%, transparent);
+  backdrop-filter: blur(22px) saturate(115%);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: .66rem;
+  width: max-content;
+  min-width: 0;
+  color: var(--hara-text);
+  font-family: var(--hara-font-sans);
+  font-weight: 720;
+  text-decoration: none;
+}
+
+.brand-logo {
+  width: 27px;
+  height: 27px;
+  flex: none;
+  border-radius: 6px;
+}
+
+.brand-name { letter-spacing: -.02em; }
+
+.brand-product {
+  position: relative;
+  margin-left: .2rem;
+  padding-left: .82rem;
+  color: var(--hara-muted);
+  font-size: .76rem;
+  font-weight: 620;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.brand-product::before {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 1px;
+  height: 18px;
+  content: "";
+  background: var(--hara-line-strong);
+  transform: translateY(-50%);
+}
+
+.site-header nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(1rem, 3vw, 2.4rem);
+}
+
+.site-header nav a {
+  color: var(--hara-muted);
+  font-family: var(--hara-font-sans);
+  font-size: .86rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color var(--hara-motion-fast) ease;
+}
+
+.site-header nav a:hover { color: var(--hara-text); }
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  justify-self: end;
+  gap: .42rem;
+}
+
+.hara-theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: .42rem .7rem;
+  color: var(--hara-text);
+  border: 1px solid var(--hara-line);
+  border-radius: 999px;
+  background: var(--hara-surface);
+  font: 620 .78rem var(--hara-font-sans);
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.hara-theme-toggle { gap: .45rem; }
+
+.hara-theme-toggle:hover {
+  border-color: var(--hara-line-strong);
+  background: var(--hara-surface-raised);
+}
+
+.site-footer {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: .7rem 1.4rem;
+  min-height: 100px;
+  padding: 1.5rem var(--hara-space-page);
+  border-top: 1px solid var(--hara-line);
+  color: var(--hara-muted);
+  font-size: .82rem;
+}
+
+.site-footer > strong { color: var(--hara-text); }
+.site-footer p { margin: 0; }
+.site-colophon { justify-self: end; }
+.site-footer a { text-decoration: none; }
+.site-footer a:hover { color: var(--hara-text); }
+.site-footer [aria-hidden="true"] { margin: 0 .35rem; color: var(--hara-faint); }
+
+.ecosystem-links {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .45rem 1.1rem;
+  padding-top: .9rem;
+  border-top: 1px solid var(--hara-line);
+}
+
+.ecosystem-links a,
+.ecosystem-links span {
+  color: var(--hara-muted);
+  font-size: .78rem;
+}
+
+.ecosystem-links span[aria-current="page"] { color: var(--hara-text); }
+
+@media (max-width: 760px) {
+  .site-header {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: .45rem;
+    padding-inline: 14px;
+  }
+
+  .brand-name { display: none; }
+  .brand-product { margin-left: 0; padding-left: 0; }
+  .brand-product::before { display: none; }
+
+  .site-header nav {
+    display: flex;
+    justify-content: flex-start;
+    gap: .25rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .site-header nav::-webkit-scrollbar { display: none; }
+
+  .site-header nav a {
+    display: inline-flex !important;
+    align-items: center;
+    min-height: 34px;
+    padding: .45rem .55rem;
+    border-radius: 999px;
+    font-size: .78rem;
+  }
+
+  .site-header nav a:hover { background: var(--hara-surface-raised); }
+
+  .site-footer {
+    grid-template-columns: 1fr;
+    align-items: start;
+    gap: .55rem;
+  }
+
+  .site-colophon { justify-self: start; }
+  .ecosystem-links { grid-column: 1; }
+}
+
+@media (max-width: 560px) {
+  .site-header nav a:nth-child(1),
+  .site-header nav a:nth-child(2) { display: none !important; }
+  .hara-theme-toggle { min-height: 34px; padding-inline: .55rem; }
+  .hara-theme-toggle [data-hara-theme-label] { display: none; }
+}

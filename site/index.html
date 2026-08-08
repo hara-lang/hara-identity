@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="GitHub sign-in and the public trust policy for the Hara ecosystem.">
+  <meta name="theme-color" content="#080a0d">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Hara">
   <meta property="og:title" content="Hara Identity">
@@ -21,40 +22,51 @@
   <meta name="twitter:image" content="https://id.hara-lang.org/og-hara-identity.jpg">
   <meta name="twitter:image:alt" content="Hara identity — one account across the Hara ecosystem">
   <link rel="canonical" href="https://id.hara-lang.org/">
-  <link rel="stylesheet" href="/vendor/hara-ui/tokens.css">
+  <link rel="icon" type="image/svg+xml" href="/vendor/visual-language/hara-logo.svg">
+  <link rel="stylesheet" href="/vendor/visual-language/theme.css">
   <link rel="stylesheet" href="/page.css">
+  <link rel="stylesheet" href="/public-shell.css">
   <title>Hara Identity</title>
+  <script type="module" src="/theme-toggle.js"></script>
   <script src="/identity-client.js" defer></script>
 </head>
 <body>
   <header class="site-header">
     <a class="brand" href="https://www.hara-lang.org/" aria-label="Hara home">
-      <span class="brand-mark" aria-hidden="true">H</span>
-      <span>Hara</span>
+      <img class="brand-logo" src="/vendor/visual-language/hara-logo.svg" alt="" width="27" height="27">
+      <span class="brand-name">Hara</span>
+      <span class="brand-product">Identity</span>
     </a>
-    <nav aria-label="Hara ecosystem">
-      <a href="https://www.hara-lang.org/">Home</a>
-      <a href="https://world.hara-lang.org/">World</a>
+    <nav aria-label="Primary">
+      <a href="https://www.hara-lang.org/benchmarks/">Benchmarks</a>
+      <a href="https://www.hara-lang.org/docs/start/orientation/">Docs</a>
       <a href="https://specs.hara-lang.org/">Specs</a>
-      <a href="https://packages.hara-lang.org/">Packages</a>
-      <span aria-current="page">Identity</span>
+      <a href="https://world.hara-lang.org/">World</a>
     </nav>
-    <div data-hara-identity></div>
+    <div class="header-actions">
+      <div data-hara-identity></div>
+      <button class="hara-theme-toggle" type="button" data-hara-theme-toggle aria-label="Change colour theme">
+        <span aria-hidden="true" data-hara-theme-icon>◐</span>
+        <span data-hara-theme-label>System</span>
+      </button>
+    </div>
   </header>
 
   <main class="page">
-    <p class="eyebrow">HARA / IDENTITY</p>
-    <h1 class="hero">One GitHub identity across Hara.</h1>
-    <p class="lede">
-      Sign in once here and the same GitHub account is visible on
-      <a href="https://www.hara-lang.org/">www</a>,
-      <a href="https://world.hara-lang.org/">World</a>,
-      <a href="https://specs.hara-lang.org/">Specs</a>, and
-      <a href="https://packages.hara-lang.org/">Packages</a>.
-      The browser session is operational identity only; package keys,
-      namespace grants, signatures, and revocations remain independently
-      verifiable trust records in Git.
-    </p>
+    <header class="page-intro">
+      <p class="eyebrow">HARA / IDENTITY</p>
+      <h1 class="hero">One GitHub identity across Hara.</h1>
+      <p class="lede">
+        Sign in once here and the same GitHub account is visible on
+        <a href="https://www.hara-lang.org/">www</a>,
+        <a href="https://world.hara-lang.org/">World</a>,
+        <a href="https://specs.hara-lang.org/">Specs</a>, and
+        <a href="https://packages.hara-lang.org/">Packages</a>.
+        The browser session is operational identity only; package keys,
+        namespace grants, signatures, and revocations remain independently
+        verifiable trust records in Git.
+      </p>
+    </header>
 
     <section class="identity-boundary" aria-label="Identity boundary">
       <article>
@@ -69,61 +81,80 @@
       </article>
     </section>
 
-    <nav class="links" aria-label="Identity documents">
-      <a class="card" href="/.well-known/hara-session">
-        <span class="card-label">Session discovery</span>
-        <span class="card-path">/.well-known/hara-session</span>
-        <span class="card-note">OAuth, session, sign-out, and approved-origin coordinates.</span>
-      </a>
-      <a class="card" href="/session">
-        <span class="card-label">Current session</span>
-        <span class="card-path">/session</span>
-        <span class="card-note">Credentialed session state for Hara sites.</span>
-      </a>
-      <a class="card" href="https://world.hara-lang.org/">
-        <span class="card-label">Community</span>
-        <span class="card-path">world.hara-lang.org</span>
-        <span class="card-note">Profiles, announcements, community writing, and Hara World publications.</span>
-      </a>
-      <a class="card" href="/v1/identity">
-        <span class="card-label">Trust policy</span>
-        <span class="card-path">/v1/identity</span>
-        <span class="card-note">The signed public package identity policy served from Git.</span>
-      </a>
-      <a class="card" href="/.well-known/hara-tap.edn">
-        <span class="card-label">Package discovery</span>
-        <span class="card-path">/.well-known/hara-tap.edn</span>
-        <span class="card-note">TAP discovery for identity and package registry coordinates.</span>
-      </a>
-      <a class="card" href="https://github.com/hara-lang/hara-identity">
-        <span class="card-label">Authority</span>
-        <span class="card-path">github.com/hara-lang/hara-identity</span>
-        <span class="card-note">The current service and signed trust-policy repository.</span>
-      </a>
-      <a class="card" href="https://specs.hara-lang.org">
-        <span class="card-label">Specifications</span>
-        <span class="card-path">specs.hara-lang.org</span>
-        <span class="card-note">Normative language and platform specifications.</span>
-      </a>
-    </nav>
+    <section class="resource-section" aria-labelledby="resource-title">
+      <div class="section-heading">
+        <p class="eyebrow">PUBLIC COORDINATES</p>
+        <h2 id="resource-title">Inspect the boundary.</h2>
+      </div>
+      <nav class="links" aria-label="Identity documents">
+        <a class="card" href="/.well-known/hara-session">
+          <span class="card-label">Session discovery</span>
+          <span class="card-path">/.well-known/hara-session</span>
+          <span class="card-note">OAuth, session, sign-out, and approved-origin coordinates.</span>
+        </a>
+        <a class="card" href="/session">
+          <span class="card-label">Current session</span>
+          <span class="card-path">/session</span>
+          <span class="card-note">Credentialed session state for Hara sites.</span>
+        </a>
+        <a class="card" href="/identity-client.js">
+          <span class="card-label">Shared client</span>
+          <span class="card-path">/identity-client.js</span>
+          <span class="card-note">The versioned account control used by approved Hara sites.</span>
+        </a>
+        <a class="card" href="https://world.hara-lang.org/">
+          <span class="card-label">Community</span>
+          <span class="card-path">world.hara-lang.org</span>
+          <span class="card-note">Profiles, announcements, community writing, and Hara World publications.</span>
+        </a>
+        <a class="card" href="/v1/identity">
+          <span class="card-label">Trust policy</span>
+          <span class="card-path">/v1/identity</span>
+          <span class="card-note">The signed public package identity policy served from Git.</span>
+        </a>
+        <a class="card" href="/.well-known/hara-tap.edn">
+          <span class="card-label">Package discovery</span>
+          <span class="card-path">/.well-known/hara-tap.edn</span>
+          <span class="card-note">TAP discovery for identity and package registry coordinates.</span>
+        </a>
+        <a class="card" href="https://github.com/hara-lang/hara-identity">
+          <span class="card-label">Authority</span>
+          <span class="card-path">github.com/hara-lang/hara-identity</span>
+          <span class="card-note">The current service and signed trust-policy repository.</span>
+        </a>
+        <a class="card" href="https://specs.hara-lang.org">
+          <span class="card-label">Specifications</span>
+          <span class="card-path">specs.hara-lang.org</span>
+          <span class="card-note">Normative language and platform specifications.</span>
+        </a>
+      </nav>
+    </section>
 
     <section class="fingerprint" aria-label="Root key fingerprint">
-      <p class="fingerprint-label">Root key — ed25519</p>
+      <div>
+        <p class="fingerprint-label">Root key — ed25519</p>
+        <p class="fingerprint-note">Pinned public trust anchor</p>
+      </div>
       <code class="fingerprint-value">638ad43d5840a7013e5462d0a52da429774257b8ec0a0794e6818aaa0aa835a2</code>
     </section>
 
-    <footer class="fine-print">
+    <section class="fine-print" aria-label="Privacy boundary">
       <p>
         The GitHub provider token is used only to read the account identity
         during sign-in and is not retained in the Hara session. Private package
         signing material is never held or served here.
       </p>
-      <p class="colophon">
-        <a href="https://opensource.greenways.ai/open-source/">A Greenways Open Source Project</a>
-        <span aria-hidden="true">·</span>
-        <a href="https://github.com/hara-lang/hara-identity/blob/main/LICENSE">Apache-2.0</a>
-      </p>
-    </footer>
+    </section>
   </main>
+
+  <footer class="site-footer">
+    <strong>Hara Identity</strong>
+    <p>Operational identity, separate from package trust.</p>
+    <p>
+      <a href="https://opensource.greenways.ai/open-source/">A Greenways Open Source Project</a>
+      <span aria-hidden="true">·</span>
+      <a href="https://github.com/hara-lang/hara-identity/blob/main/LICENSE">Apache-2.0</a>
+    </p>
+  </footer>
 </body>
 </html>

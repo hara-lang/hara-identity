@@ -32,9 +32,19 @@ const CALLBACK_PATH = "/auth/github/callback";
 const SESSION_PATHS = new Set(["/session", "/api/v1/session", "/api/auth/session"]);
 const LOGOUT_PATHS = new Set(["/logout", "/api/v1/logout", "/auth/logout"]);
 const DISCOVERY_PATH = "/.well-known/hara-session";
-const WORLD_ORIGINS = Object.freeze({
-  production: "https://world.hara-lang.org",
-  testing: "https://world.testing.hara-lang.org",
+const IDENTITY_CONTRACT_VERSION = 1;
+const IDENTITY_CLIENT_VERSION = 1;
+const FIRST_PARTY_RELYING_ORIGINS = Object.freeze({
+  production: Object.freeze([
+    "https://world.hara-lang.org",
+    "https://docs.hara-lang.org",
+    "https://playground.hara-lang.org",
+  ]),
+  testing: Object.freeze([
+    "https://world.testing.hara-lang.org",
+    "https://docs.testing.hara-lang.org",
+    "https://playground.testing.hara-lang.org",
+  ]),
 });
 
 export const config = {
@@ -50,19 +60,26 @@ export const config = {
     "/auth/logout",
     "/.well-known/hara-session",
   ],
+  rateLimit: {
+    windowLimit: 240,
+    windowSize: 60,
+    aggregateBy: ["ip", "domain"],
+  },
 };
 
-function envWithFirstPartyWorldOrigin(env, requestUrl) {
+function envWithFirstPartyOrigins(env, requestUrl) {
   const request = new URL(requestUrl);
   const isTesting = request.hostname === "id.testing.hara-lang.org"
     || request.hostname.endsWith(".testing.hara-lang.org");
   const configured = env?.HARA_AUTH_ALLOWED_ORIGINS
     || env?.AUTH_ALLOWED_ORIGINS
     || "";
-  const worldOrigin = isTesting ? WORLD_ORIGINS.testing : WORLD_ORIGINS.production;
+  const relyingOrigins = isTesting
+    ? FIRST_PARTY_RELYING_ORIGINS.testing
+    : FIRST_PARTY_RELYING_ORIGINS.production;
   return {
     ...env,
-    HARA_AUTH_ALLOWED_ORIGINS: [configured, worldOrigin].filter(Boolean).join(","),
+    HARA_AUTH_ALLOWED_ORIGINS: [configured, ...relyingOrigins].filter(Boolean).join(","),
   };
 }
 
@@ -104,21 +121,24 @@ function handleDiscovery(request, env) {
   }
   const origin = new URL(request.url).origin;
   return jsonResponse({
+    contractVersion: IDENTITY_CONTRACT_VERSION,
+    clientVersion: IDENTITY_CLIENT_VERSION,
     issuer: origin,
     provider: "github",
     authorizationEndpoint: `${origin}/github/start`,
     callbackEndpoint: `${origin}/auth/github/callback`,
     sessionEndpoint: `${origin}/session`,
     logoutEndpoint: `${origin}/logout`,
+    globalLogoutEndpoint: `${origin}/logout/global`,
+    clientEndpoint: `${origin}/v1/identity-client.js`,
+    legacyClientEndpoint: `${origin}/identity-client.js`,
     allowedOrigins: [...allowedOrigins(env, request.url)].sort(),
     configured: isAuthConfigured(env),
   }, { method: request.method });
 }
 
 function handleStart(request, env) {
-  if (request.method !== "GET") {
-    return methodNotAllowed(request.method, ["GET"]);
-  }
+  if (request.method !== "GET") return methodNotAllowed(request.method, ["GET"]);
   const url = new URL(request.url);
   const oauth = readOAuthConfig(env, request.url);
   const attempt = createOAuthAttempt(
@@ -133,16 +153,11 @@ function handleStart(request, env) {
     challenge: attempt.challenge,
     scope: oauth.scope,
   });
-  return redirectResponse(location, {
-    cookies: oauthAttemptCookies(attempt, request.url),
-  });
+  return redirectResponse(location, { cookies: oauthAttemptCookies(attempt, request.url) });
 }
 
 async function handleCallback(request, env, fetchImpl, now) {
-  if (request.method !== "GET") {
-    return methodNotAllowed(request.method, ["GET"]);
-  }
-
+  if (request.method !== "GET") return methodNotAllowed(request.method, ["GET"]);
   const oauth = readOAuthConfig(env, request.url);
   const callback = assertOAuthCallback({
     requestUrl: request.url,
@@ -163,25 +178,17 @@ async function handleCallback(request, env, fetchImpl, now) {
   });
   return redirectResponse(callback.returnTo, {
     status: 302,
-    cookies: [
-      ...clearOAuthCookies(request.url),
-      sessionCookie(token, request.url),
-    ],
+    cookies: [...clearOAuthCookies(request.url), sessionCookie(token, request.url)],
   });
 }
 
 function handleSession(request, env, now) {
   const methods = ["GET", "HEAD", "OPTIONS"];
   let cors;
-  try {
-    cors = withCors(request, env, methods);
-  } catch (error) {
-    return jsonResponse({ error: { code: error.code, message: error.message } }, { status: error.status });
-  }
+  try { cors = withCors(request, env, methods); }
+  catch (error) { return jsonResponse({ error: { code: error.code, message: error.message } }, { status: error.status }); }
   if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
-  if (request.method !== "GET" && request.method !== "HEAD") {
-    return methodNotAllowed(request.method, ["GET", "HEAD", "OPTIONS"], cors);
-  }
+  if (request.method !== "GET" && request.method !== "HEAD") return methodNotAllowed(request.method, methods, cors);
 
   const configured = isAuthConfigured(env);
   let profile = null;
@@ -192,25 +199,16 @@ function handleSession(request, env, now) {
       now,
     });
   }
-
-  return jsonResponse(sessionPayload(profile, configured), {
-    method: request.method,
-    headers: cors,
-  });
+  return jsonResponse(sessionPayload(profile, configured), { method: request.method, headers: cors });
 }
 
 function handleLogout(request, env) {
   const methods = ["POST", "OPTIONS"];
   let cors;
-  try {
-    cors = withCors(request, env, methods);
-  } catch (error) {
-    return jsonResponse({ error: { code: error.code, message: error.message } }, { status: error.status });
-  }
+  try { cors = withCors(request, env, methods); }
+  catch (error) { return jsonResponse({ error: { code: error.code, message: error.message } }, { status: error.status }); }
   if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
-  if (request.method !== "POST") {
-    return methodNotAllowed(request.method, ["POST", "OPTIONS"], cors);
-  }
+  if (request.method !== "POST") return methodNotAllowed(request.method, methods, cors);
 
   const headers = responseHeaders();
   cors.forEach((value, key) => headers.set(key, value));
@@ -224,7 +222,7 @@ export async function handle(request, {
   now = Date.now(),
 } = {}) {
   const url = new URL(request.url);
-  const effectiveEnv = envWithFirstPartyWorldOrigin(env, request.url);
+  const effectiveEnv = envWithFirstPartyOrigins(env, request.url);
   try {
     if (url.pathname === DISCOVERY_PATH) return handleDiscovery(request, effectiveEnv);
     if (START_PATHS.has(url.pathname)) return handleStart(request, effectiveEnv);

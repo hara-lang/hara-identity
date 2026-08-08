@@ -38,6 +38,18 @@ jobs:
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_TESTING_SITE_ID }}
+      - name: Sync production GitHub identity configuration
+        if: >-
+          (github.event_name != 'pull_request' && github.ref_name == 'production') ||
+          (github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'production')
+        run: bash .github/scripts/sync-identity-runtime-config.sh
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_PRODUCTION_SITE_ID }}
+          NETLIFY_ACCOUNT_SLUG: zcaudate
+          HARA_GITHUB_OAUTH_CLIENT_ID: ${{ secrets.HARA_GITHUB_OAUTH_CLIENT_ID }}
+          HARA_GITHUB_OAUTH_CLIENT_SECRET: ${{ secrets.HARA_GITHUB_OAUTH_CLIENT_SECRET }}
+          HARA_AUTH_SESSION_SECRET: ${{ secrets.HARA_AUTH_SESSION_SECRET }}
       - name: Deploy production to id.hara-lang.org
         if: >-
           (github.event_name != 'pull_request' && github.ref_name == 'production') ||

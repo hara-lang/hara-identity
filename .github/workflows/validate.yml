@@ -14,7 +14,7 @@ on:
       - ".github/workflows/pages.yml"
       - ".github/workflows/validate.yml"
   push:
-    branches: [main]
+    branches: [main, testing]
     paths:
       - "netlify/**"
       - "site/**"

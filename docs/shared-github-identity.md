@@ -2,19 +2,19 @@
 
 ## Goal
 
-A person who signs in on any approved Hara site should see the same stable GitHub identity on www, Specs, Packages, World, and Identity without repeating OAuth on every origin.
+A person who signs in on any approved Hara site should see the same stable GitHub identity on www, Build, Packages, Learn, and Identity without repeating OAuth on every origin.
 
 ## Boundary
 
-`id.hara-lang.org` is the only OAuth relying party and the only origin that receives the Hara session cookie. The cookie is host-only; it is not a `Domain=.hara-lang.org` cookie and is therefore never attached to requests for www, Specs, Packages, or World.
+`id.hara-lang.org` is the only OAuth relying party and the only origin that receives the Hara session cookie. The cookie is host-only; it is not a `Domain=.hara-lang.org` cookie and is therefore never attached to requests for www, Build, Packages, or Learn.
 
 Each relying site asks the identity origin for session state:
 
 ```text
-browser on specs.hara-lang.org
+browser on build.hara-lang.org
   -> GET https://id.hara-lang.org/session
      credentials: include
-     Origin: https://specs.hara-lang.org
+     Origin: https://build.hara-lang.org
   <- exact-origin CORS response + GitHub profile
 ```
 
@@ -25,7 +25,7 @@ Because the Hara sites are same-site but different origins, the browser can send
 The default mode remains a full-page redirect:
 
 ```text
-www | specs | packages | world | id
+www | specs | packages | learn | id
   -> id.hara-lang.org/github/start?returnTo=<exact approved URL>
   -> GitHub authorization (state + S256 PKCE)
   -> id.hara-lang.org/auth/github/callback
@@ -78,7 +78,7 @@ The current avatar and profile URLs are derived from the numeric account ID and 
 
 ## CORS and sign-out
 
-`/session` and `/logout` echo `Access-Control-Allow-Origin` only for an exact approved origin and include `Access-Control-Allow-Credentials: true`. Unknown origins receive no readable session response. The shared account control uses front-channel global logout so Identity and World can each clear their separate host-only cookies before returning to the initiating approved page.
+`/session` and `/logout` echo `Access-Control-Allow-Origin` only for an exact approved origin and include `Access-Control-Allow-Credentials: true`. Unknown origins receive no readable session response. The shared account control uses front-channel global logout so Identity and Learn can each clear their separate host-only cookies before returning to the initiating approved page.
 
 ## Production and testing
 

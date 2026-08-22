@@ -51,7 +51,7 @@ After the automated gate passes, complete one browser test against testing:
 
 ```text
 www.testing → Sign in → GitHub → return to www.testing
-specs.testing shows the same account
+build.testing shows the same account
 packages.testing shows the same account
 logout from one site logs out all three
 ```

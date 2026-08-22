@@ -36,12 +36,12 @@ const IDENTITY_CONTRACT_VERSION = 1;
 const IDENTITY_CLIENT_VERSION = 1;
 const FIRST_PARTY_RELYING_ORIGINS = Object.freeze({
   production: Object.freeze([
-    "https://world.hara-lang.org",
+    "https://learn.hara-lang.org",
     "https://docs.hara-lang.org",
     "https://playground.hara-lang.org",
   ]),
   testing: Object.freeze([
-    "https://world.testing.hara-lang.org",
+    "https://learn.testing.hara-lang.org",
     "https://docs.testing.hara-lang.org",
     "https://playground.testing.hara-lang.org",
   ]),

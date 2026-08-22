@@ -22,14 +22,14 @@ const COOKIE_NAME_PATTERN = /^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/;
 const PRODUCTION_ORIGINS = Object.freeze([
   "https://hara-lang.org",
   "https://www.hara-lang.org",
-  "https://specs.hara-lang.org",
+  "https://build.hara-lang.org",
   "https://packages.hara-lang.org",
   "https://id.hara-lang.org",
 ]);
 
 const TESTING_ORIGINS = Object.freeze([
   "https://www.testing.hara-lang.org",
-  "https://specs.testing.hara-lang.org",
+  "https://build.testing.hara-lang.org",
   "https://packages.testing.hara-lang.org",
   "https://id.testing.hara-lang.org",
 ]);

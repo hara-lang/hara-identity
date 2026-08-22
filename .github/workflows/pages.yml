@@ -51,19 +51,19 @@ jobs:
         run: |
           for consumer in \
             https://www.testing.hara-lang.org \
-            https://specs.testing.hara-lang.org \
+            https://build.testing.hara-lang.org \
             https://packages.testing.hara-lang.org \
             https://id.testing.hara-lang.org \
-            https://world.testing.hara-lang.org; do
+            https://learn.testing.hara-lang.org; do
             HARA_CONSUMER_ORIGIN="$consumer" \
               bash .github/scripts/verify-identity-consumer.sh
           done
-      - name: Verify testing World session handoff
+      - name: Verify testing Learn session handoff
         if: github.ref_name == 'testing'
-        run: bash .github/scripts/verify-world-handoff.sh
+        run: bash .github/scripts/verify-learn-handoff.sh
         env:
           HARA_IDENTITY_ORIGIN: https://id.testing.hara-lang.org
-          HARA_WORLD_ORIGIN: https://world.testing.hara-lang.org
+          HARA_LEARN_ORIGIN: https://learn.testing.hara-lang.org
       - name: Reconcile id.hara-lang.org
         if: github.ref_name == 'main'
         run: bash .github/scripts/reconcile-netlify-domain.sh
@@ -78,16 +78,16 @@ jobs:
         run: |
           for consumer in \
             https://www.hara-lang.org \
-            https://specs.hara-lang.org \
+            https://build.hara-lang.org \
             https://packages.hara-lang.org \
             https://id.hara-lang.org \
-            https://world.hara-lang.org; do
+            https://learn.hara-lang.org; do
             HARA_CONSUMER_ORIGIN="$consumer" \
               bash .github/scripts/verify-identity-consumer.sh
           done
-      - name: Verify production World session handoff
+      - name: Verify production Learn session handoff
         if: github.ref_name == 'main'
-        run: bash .github/scripts/verify-world-handoff.sh
+        run: bash .github/scripts/verify-learn-handoff.sh
         env:
           HARA_IDENTITY_ORIGIN: https://id.hara-lang.org
-          HARA_WORLD_ORIGIN: https://world.hara-lang.org
+          HARA_LEARN_ORIGIN: https://learn.hara-lang.org

@@ -21,10 +21,10 @@ test("publishes contract v1 without regressing current hardening", async () => {
   assert.equal(discovery.legacyClientEndpoint, "https://id.hara-lang.org/identity-client.js");
   assert.equal(discovery.globalLogoutEndpoint, "https://id.hara-lang.org/logout/global");
   assert.ok(discovery.allowedOrigins.includes("https://www.hara-lang.org"));
-  assert.ok(discovery.allowedOrigins.includes("https://specs.hara-lang.org"));
+  assert.ok(discovery.allowedOrigins.includes("https://build.hara-lang.org"));
   assert.ok(discovery.allowedOrigins.includes("https://packages.hara-lang.org"));
   assert.ok(discovery.allowedOrigins.includes("https://id.hara-lang.org"));
-  assert.ok(discovery.allowedOrigins.includes("https://world.hara-lang.org"));
+  assert.ok(discovery.allowedOrigins.includes("https://learn.hara-lang.org"));
   assert.deepEqual(config.rateLimit, {
     windowLimit: 240,
     windowSize: 60,
@@ -41,10 +41,10 @@ test("keeps testing and production contracts isolated", async () => {
   assert.equal(discovery.clientEndpoint, "https://id.testing.hara-lang.org/v1/identity-client.js");
   for (const origin of [
     "https://www.testing.hara-lang.org",
-    "https://specs.testing.hara-lang.org",
+    "https://build.testing.hara-lang.org",
     "https://packages.testing.hara-lang.org",
     "https://id.testing.hara-lang.org",
-    "https://world.testing.hara-lang.org",
+    "https://learn.testing.hara-lang.org",
   ]) assert.ok(discovery.allowedOrigins.includes(origin), origin);
   assert.equal(discovery.allowedOrigins.includes("https://www.hara-lang.org"), false);
 });
@@ -60,7 +60,7 @@ test("publishes and verifies both client URLs", async () => {
   assert.match(verifier, /\.clientVersion == 1/);
   assert.match(verifier, /\.globalLogoutEndpoint/);
   assert.match(verifier, /verify-identity-service\.sh/);
-  assert.match(workflow, /www\.testing\.hara-lang\.org[\s\S]*specs\.testing\.hara-lang\.org[\s\S]*packages\.testing\.hara-lang\.org[\s\S]*id\.testing\.hara-lang\.org[\s\S]*world\.testing\.hara-lang\.org/);
-  assert.match(workflow, /www\.hara-lang\.org[\s\S]*specs\.hara-lang\.org[\s\S]*packages\.hara-lang\.org[\s\S]*id\.hara-lang\.org[\s\S]*world\.hara-lang\.org/);
-  assert.match(workflow, /verify-world-handoff\.sh/);
+  assert.match(workflow, /www\.testing\.hara-lang\.org[\s\S]*build\.testing\.hara-lang\.org[\s\S]*packages\.testing\.hara-lang\.org[\s\S]*id\.testing\.hara-lang\.org[\s\S]*learn\.testing\.hara-lang\.org/);
+  assert.match(workflow, /www\.hara-lang\.org[\s\S]*build\.hara-lang\.org[\s\S]*packages\.hara-lang\.org[\s\S]*id\.hara-lang\.org[\s\S]*learn\.hara-lang\.org/);
+  assert.match(workflow, /verify-learn-handoff\.sh/);
 });

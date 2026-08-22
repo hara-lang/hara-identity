@@ -6,12 +6,12 @@ import {
 
 const FIRST_PARTY_RELYING_ORIGINS = Object.freeze({
   production: Object.freeze([
-    "https://world.hara-lang.org",
+    "https://learn.hara-lang.org",
     "https://docs.hara-lang.org",
     "https://playground.hara-lang.org",
   ]),
   testing: Object.freeze([
-    "https://world.testing.hara-lang.org",
+    "https://learn.testing.hara-lang.org",
     "https://docs.testing.hara-lang.org",
     "https://playground.testing.hara-lang.org",
   ]),
@@ -23,10 +23,10 @@ function isTestingIdentity(requestUrl) {
     || request.hostname.endsWith(".testing.hara-lang.org");
 }
 
-function worldOrigin(requestUrl) {
+function learnOrigin(requestUrl) {
   return isTestingIdentity(requestUrl)
-    ? "https://world.testing.hara-lang.org"
-    : "https://world.hara-lang.org";
+    ? "https://learn.testing.hara-lang.org"
+    : "https://learn.hara-lang.org";
 }
 
 function effectiveEnv(env, requestUrl) {
@@ -49,7 +49,7 @@ export async function handle(request, { env = process.env } = {}) {
   }
   const url = new URL(request.url);
   const returnTo = safeReturnTo(url.searchParams.get("returnTo") ?? "/", request.url, effectiveEnv(env, request.url));
-  const logout = new URL("/api/auth/logout", worldOrigin(request.url));
+  const logout = new URL("/api/auth/logout", learnOrigin(request.url));
   logout.searchParams.set("source", "hara-identity");
   logout.searchParams.set("returnTo", returnTo);
   return redirectResponse(logout.toString(), {

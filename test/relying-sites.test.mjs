@@ -6,12 +6,12 @@ import { handle as handleGlobalLogout } from "../netlify/functions/global-logout
 const productionOrigins = [
   "https://docs.hara-lang.org",
   "https://playground.hara-lang.org",
-  "https://world.hara-lang.org",
+  "https://learn.hara-lang.org",
 ];
 const testingOrigins = [
   "https://docs.testing.hara-lang.org",
   "https://playground.testing.hara-lang.org",
-  "https://world.testing.hara-lang.org",
+  "https://learn.testing.hara-lang.org",
 ];
 
 test("publishes Docs and Playground in the exact production and testing allowlists", async () => {
@@ -49,7 +49,7 @@ test("preserves exact Docs and Playground return URLs through global logout", as
     const response = await handleGlobalLogout(request, { env: {} });
     assert.equal(response.status, 302);
     const location = new URL(response.headers.get("location"));
-    assert.equal(location.origin, "https://world.hara-lang.org");
+    assert.equal(location.origin, "https://learn.hara-lang.org");
     assert.equal(location.pathname, "/api/auth/logout");
     assert.equal(location.searchParams.get("returnTo"), returnTo);
   }

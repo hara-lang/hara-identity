@@ -14,45 +14,45 @@ async function discovery(origin) {
   return response.json();
 }
 
-test("World is an exact first-party origin in the matching environment", async () => {
+test("Learn is an exact first-party origin in the matching environment", async () => {
   const production = await discovery("https://id.hara-lang.org");
-  assert.ok(production.allowedOrigins.includes("https://world.hara-lang.org"));
-  assert.equal(production.allowedOrigins.includes("https://world.testing.hara-lang.org"), false);
+  assert.ok(production.allowedOrigins.includes("https://learn.hara-lang.org"));
+  assert.equal(production.allowedOrigins.includes("https://learn.testing.hara-lang.org"), false);
 
   const testing = await discovery("https://id.testing.hara-lang.org");
-  assert.ok(testing.allowedOrigins.includes("https://world.testing.hara-lang.org"));
-  assert.equal(testing.allowedOrigins.includes("https://world.hara-lang.org"), false);
+  assert.ok(testing.allowedOrigins.includes("https://learn.testing.hara-lang.org"));
+  assert.equal(testing.allowedOrigins.includes("https://learn.hara-lang.org"), false);
 });
 
-test("World can read the central session only from its exact matching origin", async () => {
+test("Learn can read the central session only from its exact matching origin", async () => {
   const production = await handle(new Request("https://id.hara-lang.org/session", {
-    headers: { Origin: "https://world.hara-lang.org" },
+    headers: { Origin: "https://learn.hara-lang.org" },
   }), { env: ENV });
   assert.equal(production.status, 200);
-  assert.equal(production.headers.get("access-control-allow-origin"), "https://world.hara-lang.org");
+  assert.equal(production.headers.get("access-control-allow-origin"), "https://learn.hara-lang.org");
   assert.equal(production.headers.get("access-control-allow-credentials"), "true");
 
   const productionRejectsTesting = await handle(new Request("https://id.hara-lang.org/session", {
-    headers: { Origin: "https://world.testing.hara-lang.org" },
+    headers: { Origin: "https://learn.testing.hara-lang.org" },
   }), { env: ENV });
   assert.equal(productionRejectsTesting.status, 403);
   assert.equal(productionRejectsTesting.headers.has("access-control-allow-origin"), false);
 
   const testing = await handle(new Request("https://id.testing.hara-lang.org/session", {
-    headers: { Origin: "https://world.testing.hara-lang.org" },
+    headers: { Origin: "https://learn.testing.hara-lang.org" },
   }), { env: ENV });
   assert.equal(testing.status, 200);
-  assert.equal(testing.headers.get("access-control-allow-origin"), "https://world.testing.hara-lang.org");
+  assert.equal(testing.headers.get("access-control-allow-origin"), "https://learn.testing.hara-lang.org");
 
   const testingRejectsProduction = await handle(new Request("https://id.testing.hara-lang.org/session", {
-    headers: { Origin: "https://world.hara-lang.org" },
+    headers: { Origin: "https://learn.hara-lang.org" },
   }), { env: ENV });
   assert.equal(testingRejectsProduction.status, 403);
   assert.equal(testingRejectsProduction.headers.has("access-control-allow-origin"), false);
 });
 
-test("OAuth may return to the exact World page without broadening the cookie", async () => {
-  const returnTo = "https://world.hara-lang.org/me?from=identity#account";
+test("OAuth may return to the exact Learn page without broadening the cookie", async () => {
+  const returnTo = "https://learn.hara-lang.org/me?from=identity#account";
   const response = await handle(new Request(
     `https://id.hara-lang.org/github/start?returnTo=${encodeURIComponent(returnTo)}`,
   ), { env: ENV });
@@ -61,6 +61,6 @@ test("OAuth may return to the exact World page without broadening the cookie", a
   assert.equal(new URL(response.headers.get("location")).origin, "https://github.com");
 
   const cookies = response.headers.get("set-cookie");
-  assert.match(cookies, /hara_id_oauth_return=https%3A%2F%2Fworld\.hara-lang\.org%2Fme%3Ffrom%3Didentity%23account/);
+  assert.match(cookies, /hara_id_oauth_return=https%3A%2F%2Flearn\.hara-lang\.org%2Fme%3Ffrom%3Didentity%23account/);
   assert.doesNotMatch(cookies, /Domain=/i);
 });

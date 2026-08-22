@@ -14,8 +14,8 @@ GitHub OAuth is completed only by `id.hara-lang.org`. The identity service sets 
 - `https://www.hara-lang.org`
 - `https://docs.hara-lang.org`
 - `https://playground.hara-lang.org`
-- `https://world.hara-lang.org`
-- `https://specs.hara-lang.org`
+- `https://learn.hara-lang.org`
+- `https://build.hara-lang.org`
 - `https://packages.hara-lang.org`
 - `https://id.hara-lang.org`
 
@@ -36,13 +36,13 @@ Compatibility aliases are retained at `/auth/github`, `/api/v1/session`, `/api/a
 
 The authorization request uses an unpredictable `state` value and S256 PKCE. The temporary GitHub access token is used only to read the stable numeric account ID and current login from GitHub; it is not placed in the Hara session or retained by the service. The signed session lasts seven days.
 
-The browser client at `/identity-client.js` renders the same account control on www, Docs, Playground, World, Specs, Packages, and Identity. Relying sites may opt into popup sign-in while keeping the existing approved full-page fallback. The client shows the GitHub avatar/login after reading `/session`. Its sign-out control uses the front-channel global logout: Identity clears its host-only cookie, World clears its separate host-only cookie, and the browser returns to the exact approved Hara page that initiated logout. See [`docs/global-logout.md`](docs/global-logout.md).
+The browser client at `/identity-client.js` renders the same account control on www, Docs, Playground, Learn, Build, Packages, and Identity. Relying sites may opt into popup sign-in while keeping the existing approved full-page fallback. The client shows the GitHub avatar/login after reading `/session`. Its sign-out control uses the front-channel global logout: Identity clears its host-only cookie, Learn clears its separate host-only cookie, and the browser returns to the exact approved Hara page that initiated logout. See [`docs/global-logout.md`](docs/global-logout.md).
 
 OAuth, handoff, and global-logout Functions are rate-limited at the deployment edge. Expired handoff codes are purged hourly.
 
-## World session handoff
+## Learn session handoff
 
-World performs authenticated writes only after exchanging the central identity for a World-local session:
+Learn performs authenticated writes only after exchanging the central identity for a Learn-local session:
 
 ```text
 GET  /.well-known/hara-handoff
@@ -50,9 +50,9 @@ GET  /v1/handoffs/authorize
 POST /v1/handoffs/token
 ```
 
-The authorization code is opaque, short-lived, callback-bound, and protected by S256 PKCE. World authenticates the token exchange with an environment-specific shared secret, records the returned handoff ID once in PostgreSQL, and signs its own host-only cookie with a different key. Identity never shares its session key or the GitHub provider token.
+The authorization code is opaque, short-lived, callback-bound, and protected by S256 PKCE. Learn authenticates the token exchange with an environment-specific shared secret, records the returned handoff ID once in PostgreSQL, and signs its own host-only cookie with a different key. Identity never shares its session key or the GitHub provider token.
 
-See [`docs/world-session-handoff.md`](docs/world-session-handoff.md) for the complete boundary.
+See [`docs/learn-session-handoff.md`](docs/learn-session-handoff.md) for the complete boundary.
 
 ### Deployment configuration
 
@@ -62,7 +62,7 @@ Set these encrypted environment variables on the Identity Netlify sites only:
 HARA_GITHUB_OAUTH_CLIENT_ID
 HARA_GITHUB_OAUTH_CLIENT_SECRET
 HARA_AUTH_SESSION_SECRET
-HARA_WORLD_HANDOFF_SECRET
+HARA_LEARN_HANDOFF_SECRET
 ```
 
 Optional configuration:
@@ -71,7 +71,7 @@ Optional configuration:
 HARA_GITHUB_OAUTH_REDIRECT_URI
 HARA_GITHUB_OAUTH_SCOPE
 HARA_AUTH_ALLOWED_ORIGINS
-HARA_WORLD_HANDOFF_REDIRECT_URI
+HARA_LEARN_HANDOFF_REDIRECT_URI
 ```
 
 Production callback:
@@ -86,7 +86,7 @@ Testing callback:
 https://id.testing.hara-lang.org/auth/github/callback
 ```
 
-Use separate production and testing OAuth registrations, session secrets, and World handoff secrets. `HARA_AUTH_SESSION_SECRET` and `HARA_WORLD_HANDOFF_SECRET` must each be at least 32 characters. Neither value belongs on www, Docs, Playground, Specs, or Packages; World receives only its matching handoff secret, never the Identity session secret.
+Use separate production and testing OAuth registrations, session secrets, and Learn handoff secrets. `HARA_AUTH_SESSION_SECRET` and `HARA_LEARN_HANDOFF_SECRET` must each be at least 32 characters. Neither value belongs on www, Docs, Playground, Build, or Packages; Learn receives only its matching handoff secret, never the Identity session secret.
 
 See [`docs/shared-github-identity.md`](docs/shared-github-identity.md) for the central session flow.
 
@@ -105,7 +105,7 @@ The history in this repository remains structurally the registry. The intended l
 - `hara-lang/hara-id-registry` — the history-preserving home for root policy, public keys, grants, delegations, and revocations.
 - `hara-lang/hara-id` — the deployable UI/API at `id.hara-lang.org` for shared sessions, challenges, enrollment verification, authorization decisions, and reviewable registry-change preparation.
 
-The centralized GitHub session and World handoff are implemented here as migration steps; they should move unchanged to `hara-id` when the repository split is made. The service never receives publisher private keys and does not silently mutate trust roots. See [`docs/repository-split.md`](docs/repository-split.md).
+The centralized GitHub session and Learn handoff are implemented here as migration steps; they should move unchanged to `hara-id` when the repository split is made. The service never receives publisher private keys and does not silently mutate trust roots. See [`docs/repository-split.md`](docs/repository-split.md).
 
 ## Development
 

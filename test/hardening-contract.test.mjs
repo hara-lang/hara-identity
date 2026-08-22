@@ -17,10 +17,10 @@ test("cleans expired handoffs hourly and sends the account control through front
   const [cleanup, client, script] = await Promise.all([
     read("netlify/functions/handoff-cleanup.mjs"),
     read("site/identity-client.js"),
-    read(".github/scripts/verify-world-handoff.sh"),
+    read(".github/scripts/verify-learn-handoff.sh"),
   ]);
   assert.match(cleanup, /@hourly/);
   assert.match(client, /\/logout\/global/);
   assert.match(client, /location\.assign/);
-  assert.match(script, /hara_world_session=;/);
+  assert.match(script, /hara_learn_session=;/);
 });

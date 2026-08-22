@@ -16,7 +16,7 @@ export const HANDOFF_AUTHORIZE_PATH = "/v1/handoffs/authorize";
 export const HANDOFF_TOKEN_PATH = "/v1/handoffs/token";
 export const HANDOFF_DISCOVERY_PATH = "/.well-known/hara-handoff";
 export const HANDOFF_TTL_SECONDS = 5 * 60;
-export const WORLD_CLIENT_ID = "world";
+export const LEARN_CLIENT_ID = "learn";
 
 const STATE_PATTERN = /^[A-Za-z0-9_-]{32,256}$/;
 const PKCE_PATTERN = /^[A-Za-z0-9_-]{43,128}$/;
@@ -49,17 +49,17 @@ function codeKey(code) {
   return `code/${createHash("sha256").update(code).digest("hex")}`;
 }
 
-function worldRedirectUri(requestUrl, env) {
+function learnRedirectUri(requestUrl, env) {
   const request = new URL(requestUrl);
   if (isLoopback(request.hostname)) {
-    const configured = envValue(env, "HARA_WORLD_HANDOFF_REDIRECT_URI");
+    const configured = envValue(env, "HARA_LEARN_HANDOFF_REDIRECT_URI");
     if (configured) {
       const redirect = new URL(configured);
       if (!isLoopback(redirect.hostname) || redirect.pathname !== "/api/auth/callback") {
         throw new AuthError({
           status: 503,
           code: "HANDOFF_REDIRECT_INVALID",
-          message: "The local World handoff callback is invalid.",
+          message: "The local Learn handoff callback is invalid.",
         });
       }
       return redirect.toString();
@@ -68,30 +68,30 @@ function worldRedirectUri(requestUrl, env) {
   }
 
   return isTestingIdentity(request)
-    ? "https://world.testing.hara-lang.org/api/auth/callback"
-    : "https://world.hara-lang.org/api/auth/callback";
+    ? "https://learn.testing.hara-lang.org/api/auth/callback"
+    : "https://learn.hara-lang.org/api/auth/callback";
 }
 
-export function readWorldHandoffClient(env = process.env, requestUrl = "https://id.hara-lang.org/") {
-  const secret = envValue(env, "HARA_WORLD_HANDOFF_SECRET");
+export function readLearnHandoffClient(env = process.env, requestUrl = "https://id.hara-lang.org/") {
+  const secret = envValue(env, "HARA_LEARN_HANDOFF_SECRET");
   if (secret.length < 32) {
     throw new AuthError({
       status: 503,
       code: "HANDOFF_NOT_CONFIGURED",
-      message: "The Hara World identity handoff is not configured.",
+      message: "The Hara Learn identity handoff is not configured.",
     });
   }
   return {
-    clientId: WORLD_CLIENT_ID,
+    clientId: LEARN_CLIENT_ID,
     clientSecret: secret,
-    redirectUri: worldRedirectUri(requestUrl, env),
+    redirectUri: learnRedirectUri(requestUrl, env),
   };
 }
 
 export function isHandoffConfigured(env = process.env, requestUrl = "https://id.hara-lang.org/") {
   if (!isAuthConfigured(env)) return false;
   try {
-    readWorldHandoffClient(env, requestUrl);
+    readLearnHandoffClient(env, requestUrl);
     return true;
   } catch {
     return false;
@@ -163,7 +163,7 @@ export async function defaultHandoffStore() {
 
 function assertAuthorizeRequest(request, env) {
   const url = new URL(request.url);
-  const client = readWorldHandoffClient(env, request.url);
+  const client = readLearnHandoffClient(env, request.url);
   const clientId = url.searchParams.get("client_id");
   const redirectUri = url.searchParams.get("redirect_uri");
   const state = url.searchParams.get("state");
@@ -267,7 +267,7 @@ export async function exchangeHandoff(request, {
     return tokenError(405, "METHOD_NOT_ALLOWED", "Only POST is supported.", { Allow: "POST" });
   }
 
-  const client = readWorldHandoffClient(env, request.url);
+  const client = readLearnHandoffClient(env, request.url);
   const authorization = parseBasicAuthorization(request.headers.get("authorization"));
   if (
     !authorization
@@ -349,13 +349,13 @@ export function handoffDiscovery(request, env = process.env) {
   const origin = new URL(request.url).origin;
   let redirectUri = null;
   try {
-    redirectUri = worldRedirectUri(request.url, env);
+    redirectUri = learnRedirectUri(request.url, env);
   } catch {}
   return jsonResponse({
     issuer: origin,
     authorizationEndpoint: `${origin}${HANDOFF_AUTHORIZE_PATH}`,
     tokenEndpoint: `${origin}${HANDOFF_TOKEN_PATH}`,
-    clients: redirectUri ? [{ id: WORLD_CLIENT_ID, redirectUri }] : [],
+    clients: redirectUri ? [{ id: LEARN_CLIENT_ID, redirectUri }] : [],
     codeChallengeMethodsSupported: ["S256"],
     configured: isHandoffConfigured(env, request.url),
   }, { method: request.method });

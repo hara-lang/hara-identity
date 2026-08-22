@@ -34,7 +34,7 @@ function cookieHeaderFromSetCookie(value) {
 test("uses exact production and testing origin allowlists", () => {
   const production = allowedOrigins({}, "https://id.hara-lang.org/session");
   assert.ok(production.has("https://www.hara-lang.org"));
-  assert.ok(production.has("https://specs.hara-lang.org"));
+  assert.ok(production.has("https://build.hara-lang.org"));
   assert.ok(production.has("https://packages.hara-lang.org"));
   assert.equal(production.has("https://www.testing.hara-lang.org"), false);
 
@@ -46,12 +46,12 @@ test("uses exact production and testing origin allowlists", () => {
 test("only returns to exact Hara origins", () => {
   const request = "https://id.hara-lang.org/github/start";
   assert.equal(
-    safeReturnTo("https://specs.hara-lang.org/registry?q=hal#top", request, {}),
-    "https://specs.hara-lang.org/registry?q=hal#top",
+    safeReturnTo("https://build.hara-lang.org/registry?q=hal#top", request, {}),
+    "https://build.hara-lang.org/registry?q=hal#top",
   );
   assert.equal(safeReturnTo("https://evil.example/", request, {}), "https://id.hara-lang.org/");
   assert.equal(safeReturnTo("//evil.example/", request, {}), "https://id.hara-lang.org/");
-  assert.equal(safeReturnTo("https://specs.hara-lang.org.evil.example/", request, {}), "https://id.hara-lang.org/");
+  assert.equal(safeReturnTo("https://build.hara-lang.org.evil.example/", request, {}), "https://id.hara-lang.org/");
 });
 
 test("creates S256 PKCE authorization attempts", () => {
@@ -110,7 +110,7 @@ test("starts OAuth centrally and binds the original site return URL", async () =
 
 test("completes GitHub OAuth without retaining the provider token", async () => {
   const start = await handle(new Request(
-    "https://id.hara-lang.org/github/start?returnTo=https%3A%2F%2Fspecs.hara-lang.org%2Fregistry",
+    "https://id.hara-lang.org/github/start?returnTo=https%3A%2F%2Fbuild.hara-lang.org%2Fregistry",
   ), { env: ENV });
   const startCookies = cookieHeaderFromSetCookie(start.headers.get("set-cookie"));
   const parsed = parseCookies(startCookies);
@@ -131,7 +131,7 @@ test("completes GitHub OAuth without retaining the provider token", async () => 
   ), { env: ENV, fetchImpl, now: 1_700_000_000_000 });
 
   assert.equal(callback.status, 302);
-  assert.equal(callback.headers.get("location"), "https://specs.hara-lang.org/registry");
+  assert.equal(callback.headers.get("location"), "https://build.hara-lang.org/registry");
   const setCookie = callback.headers.get("set-cookie");
   assert.match(setCookie, new RegExp(SESSION_COOKIE));
   assert.doesNotMatch(setCookie, /temporary-provider-token/);
@@ -185,7 +185,7 @@ test("signs out centrally and clears the host-only cookie", async () => {
 
 test("reports an unconfigured deployment without failing session discovery", async () => {
   const response = await handle(new Request("https://id.hara-lang.org/session", {
-    headers: { Origin: "https://specs.hara-lang.org" },
+    headers: { Origin: "https://build.hara-lang.org" },
   }), { env: {} });
   assert.equal(response.status, 200);
   assert.deepEqual(await response.json(), {

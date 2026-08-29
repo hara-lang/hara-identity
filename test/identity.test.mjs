@@ -31,19 +31,23 @@ test("discovery document is served with a one-hour cache", async () => {
   assert.match(body, /:tap\/registry "https:\/\/packages\.hara-lang\.org"/);
 });
 
-test("identity document defaults to the main ref with a short cache", async () => {
+test("identity main resolves to an exact revision before serving an immutable document", async () => {
+  const commit = "c".repeat(40);
   const seen = [];
   const fetchImpl = async (url) => {
     seen.push(url);
+    if (url.endsWith("/commits/main")) return new Response(JSON.stringify({ sha: commit }), { status: 200 });
     return new Response('{:identity/name "hara"}\n', { status: 200 });
   };
   const res = await handle(new Request(`${BASE}/v1/identity`), fetchImpl);
   assert.equal(res.status, 200);
-  assert.equal(res.headers.get("cache-control"), "public, max-age=60");
+  assert.equal(res.headers.get("cache-control"), "public, max-age=31536000, immutable");
   assert.equal(res.headers.get("x-hara-authority"), "git");
+  assert.equal(res.headers.get("x-hara-identity-revision"), commit);
   assert.equal(res.headers.get("content-type"), "application/edn; charset=utf-8");
   assert.deepEqual(seen, [
-    "https://raw.githubusercontent.com/hara-lang/hara-identity/main/identity.edn",
+    "https://api.github.com/repos/hara-lang/hara-identity/commits/main",
+    `https://raw.githubusercontent.com/hara-lang/hara-identity/${commit}/identity.edn`,
   ]);
   assert.equal(await res.text(), '{:identity/name "hara"}\n');
 });
@@ -54,6 +58,24 @@ test("commit refs are immutable and cache forever", async () => {
   const res = await handle(new Request(`${BASE}/v1/identity?ref=${sha}`), fetchImpl);
   assert.equal(res.status, 200);
   assert.equal(res.headers.get("cache-control"), "public, max-age=31536000, immutable");
+  assert.equal(res.headers.get("x-hara-identity-revision"), sha);
+});
+
+test("identity signatures are served only from an exact revision", async () => {
+  const sha = "d".repeat(40);
+  const seen = [];
+  const fetchImpl = async (url) => {
+    seen.push(url);
+    return new Response("a".repeat(128) + "\n", { status: 200 });
+  };
+  const res = await handle(new Request(`${BASE}/v1/identity-signature?ref=${sha}`), fetchImpl);
+  assert.equal(res.status, 200);
+  assert.equal(res.headers.get("content-type"), "text/plain; charset=utf-8");
+  assert.equal(res.headers.get("cache-control"), "public, max-age=31536000, immutable");
+  assert.equal(res.headers.get("x-hara-identity-revision"), sha);
+  assert.deepEqual(seen, [
+    `https://raw.githubusercontent.com/hara-lang/hara-identity/${sha}/identity.edn.sig`,
+  ]);
 });
 
 test("an invalid ref is a 400 EDN problem that is never stored", async () => {

@@ -10,7 +10,7 @@ const DISCOVERY =
   '{:tap/name "hara" :tap/identity "https://id.hara-lang.org" :tap/registry "https://packages.hara-lang.org"}\n';
 
 export const config = {
-  path: ["/.well-known/hara-tap.edn", "/v1/identity"],
+  path: ["/.well-known/hara-tap.edn", "/v1/identity", "/v1/identity-signature"],
 };
 
 export function identityUrl(ref) {
@@ -22,9 +22,30 @@ export function identityUrl(ref) {
   return `https://raw.githubusercontent.com/${IDENTITY_REPOSITORY}/${ref}/identity.edn`;
 }
 
+export function identitySignatureUrl(ref) {
+  if (ref !== "main" && !COMMIT.test(ref)) {
+    throw new Error("ref must be main or a 40-character commit");
+  }
+  return `https://raw.githubusercontent.com/${IDENTITY_REPOSITORY}/${ref}/identity.edn.sig`;
+}
+
+export function commitUrl(ref) {
+  if (ref !== "main" && !COMMIT.test(ref)) {
+    throw new Error("ref must be main or a 40-character commit");
+  }
+  return `https://api.github.com/repos/${IDENTITY_REPOSITORY}/commits/${ref}`;
+}
+
 function edn(body, init = {}) {
   const headers = new Headers(init.headers);
   headers.set("content-type", "application/edn; charset=utf-8");
+  headers.set("x-content-type-options", "nosniff");
+  return new Response(body, { ...init, headers });
+}
+
+function text(body, init = {}) {
+  const headers = new Headers(init.headers);
+  headers.set("content-type", "text/plain; charset=utf-8");
   headers.set("x-content-type-options", "nosniff");
   return new Response(body, { ...init, headers });
 }
@@ -42,29 +63,56 @@ function discovery() {
   });
 }
 
-async function identityDocument(url, fetchImpl) {
-  const ref = url.searchParams.get("ref") ?? "main";
-  let upstream;
+async function resolveCommit(ref, fetchImpl) {
+  if (COMMIT.test(ref)) return ref;
+  const response = await fetchImpl(commitUrl(ref), {
+    headers: { "user-agent": "hara-identity-netlify" },
+  });
+  if (!response.ok) return null;
+  let document;
   try {
-    upstream = identityUrl(ref);
+    document = await response.json();
+  } catch {
+    return null;
+  }
+  return COMMIT.test(document?.sha ?? "") ? document.sha : null;
+}
+
+async function immutableDocument(url, fetchImpl, upstreamFor, responseFor) {
+  const ref = url.searchParams.get("ref") ?? "main";
+  let revision;
+  try {
+    revision = await resolveCommit(ref, fetchImpl);
   } catch (error) {
     return problem(400, "invalid-request", error.message);
   }
-  const response = await fetchImpl(upstream, {
+  if (revision == null) {
+    console.error(JSON.stringify({ event: "git-resolve-failed", ref }));
+    return problem(502, "upstream-unavailable", "authoritative Git revision unavailable");
+  }
+  const response = await fetchImpl(upstreamFor(revision), {
     headers: { "user-agent": "hara-identity-netlify" },
   });
   if (!response.ok) {
-    console.error(JSON.stringify({ event: "git-read-failed", ref, status: response.status }));
+    console.error(JSON.stringify({ event: "git-read-failed", ref: revision, status: response.status }));
     return problem(502, "upstream-unavailable", "authoritative Git document unavailable");
   }
   const body = await response.text();
-  return edn(body, {
+  return responseFor(body, {
     headers: {
-      "cache-control":
-        ref === "main" ? "public, max-age=60" : "public, max-age=31536000, immutable",
+      "cache-control": "public, max-age=31536000, immutable",
       "x-hara-authority": "git",
+      "x-hara-identity-revision": revision,
     },
   });
+}
+
+async function identityDocument(url, fetchImpl) {
+  return immutableDocument(url, fetchImpl, identityUrl, edn);
+}
+
+async function identitySignatureDocument(url, fetchImpl) {
+  return immutableDocument(url, fetchImpl, identitySignatureUrl, text);
 }
 
 export async function handle(req, fetchImpl = fetch) {
@@ -74,6 +122,7 @@ export async function handle(req, fetchImpl = fetch) {
   const url = new URL(req.url);
   if (url.pathname === "/.well-known/hara-tap.edn") return discovery();
   if (url.pathname === "/v1/identity") return identityDocument(url, fetchImpl);
+  if (url.pathname === "/v1/identity-signature") return identitySignatureDocument(url, fetchImpl);
   return problem(404, "not-found", "unknown Hara platform endpoint");
 }
 

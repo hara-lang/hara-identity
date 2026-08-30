@@ -40,6 +40,36 @@ The browser client at `/identity-client.js` renders the same account control on 
 
 OAuth, handoff, and global-logout Functions are rate-limited at the deployment edge. Expired handoff codes are purged hourly.
 
+## Publisher device flow
+
+`hara-native publish` uses a short-lived device request rather than copying a
+browser session or a private key into the CLI. The native executable proves the
+public key over a server challenge, prints a verification URL, and polls with a
+separate opaque secret. The browser signs in through the existing GitHub flow
+and confirms the key fingerprint and package coordinate.
+
+```text
+POST /v1/publisher/devices
+POST /v1/publisher/devices/<id>/proof
+GET  /v1/publisher/devices/<id>
+POST /v1/publisher/devices/<id>/confirm
+GET  /publish/device?code=<browser-code>
+```
+
+Protected namespaces create a GitHub review issue through an installation token
+for the dedicated Identity GitHub App. The service never signs `identity.edn`:
+an offline root signer verifies the reviewed request and creates the only
+policy-changing PR. A later `authorize` device request issues a five-minute,
+one-time authorization bound to the exact publisher intent; Packages verifies
+that authorization and the root-signed policy independently. The root policy
+records the publisher's stable numeric GitHub subject as well as its public key
+and scope, so a valid authorization from a different signed-in account cannot
+be reused for that key.
+
+Pending device records live in a strongly consistent, site-scoped Netlify Blobs
+store, use hashed polling/browser secrets, and expire after ten minutes. They
+are operational state, never policy authority.
+
 ## Learn session handoff
 
 Learn performs authenticated writes only after exchanging the central identity for a Learn-local session:
@@ -63,6 +93,10 @@ HARA_GITHUB_OAUTH_CLIENT_ID
 HARA_GITHUB_OAUTH_CLIENT_SECRET
 HARA_AUTH_SESSION_SECRET
 HARA_LEARN_HANDOFF_SECRET
+HARA_PUBLISH_AUTHORIZATION_PRIVATE_KEY
+HARA_ID_GRANT_APP_ID
+HARA_ID_GRANT_APP_INSTALLATION_ID
+HARA_ID_GRANT_APP_PRIVATE_KEY
 ```
 
 Optional configuration:
@@ -72,7 +106,14 @@ HARA_GITHUB_OAUTH_REDIRECT_URI
 HARA_GITHUB_OAUTH_SCOPE
 HARA_AUTH_ALLOWED_ORIGINS
 HARA_LEARN_HANDOFF_REDIRECT_URI
+HARA_ID_GRANT_REPOSITORY
 ```
+
+`HARA_PUBLISH_AUTHORIZATION_PRIVATE_KEY` is an Ed25519 PKCS#8 PEM private key
+stored only in the Identity site's encrypted configuration. Its corresponding
+32-byte lowercase-hex public key must be added to the root-signed policy as
+`:identity/publish-authorization-key` by the offline maintainer command. The
+service deliberately fails closed until those two values agree.
 
 Production callback:
 

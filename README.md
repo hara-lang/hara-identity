@@ -57,14 +57,17 @@ GET  /publish/device?code=<browser-code>
 ```
 
 Protected namespaces create a GitHub review issue through an installation token
-for the dedicated Identity GitHub App. The service never signs `identity.edn`:
-an offline root signer verifies the reviewed request and creates the only
-policy-changing PR. A later `authorize` device request issues a five-minute,
-one-time authorization bound to the exact publisher intent; Packages verifies
-that authorization and the root-signed policy independently. The root policy
-records the publisher's stable numeric GitHub subject as well as its public key
-and scope, so a valid authorization from a different signed-in account cannot
-be reused for that key.
+for the dedicated Identity GitHub App. The protected `publisher-policy` GitHub
+workflow accepts only those broker-authored issues, validates their exact
+structured grant, and prepares the only policy-changing PR. The workflow holds
+the root seed only in GitHub's protected `policy-signing` environment; Identity
+itself never receives that key. One CODEOWNER approval auto-merges the PR and
+closes the originating issue. A later `authorize` device request issues a
+five-minute, one-time authorization bound to the exact publisher intent;
+Packages verifies that authorization and the root-signed policy independently.
+The root policy records the publisher's stable numeric GitHub subject as well
+as its public key and scope, so a valid authorization from a different
+signed-in account cannot be reused for that key.
 
 Pending device records live in a strongly consistent, site-scoped Netlify Blobs
 store, use hashed polling/browser secrets, and expire after ten minutes. They
@@ -112,8 +115,24 @@ HARA_ID_GRANT_REPOSITORY
 `HARA_PUBLISH_AUTHORIZATION_PRIVATE_KEY` is an Ed25519 PKCS#8 PEM private key
 stored only in the Identity site's encrypted configuration. Its corresponding
 32-byte lowercase-hex public key must be added to the root-signed policy as
-`:identity/publish-authorization-key` by the offline maintainer command. The
+`:identity/publish-authorization-key` by the policy automation. The
 service deliberately fails closed until those two values agree.
+
+### Policy automation configuration
+
+Create the protected GitHub environment `policy-signing` on
+`hara-lang/hara-identity`. It contains only
+`HARA_IDENTITY_ROOT_SEED_B64`: the base64 encoding of the 32-byte Ed25519 root
+seed. Restrict it to the `main` branch. Store
+`HARA_PUBLISH_AUTHORIZATION_PUBLIC_KEY` as a repository variable, not a
+secret. The matching authorization private key remains only in the Identity
+site's encrypted Netlify configuration.
+
+The first policy after a lost-root recovery is a separately reviewed,
+GitHub-governed reset. Thereafter, `publisher-policy.yml` uses the existing
+`hara-native id policy grant` command for exact, idempotent grants. No private
+key is committed, printed, uploaded as an artifact, or passed to the Identity
+function.
 
 Production callback:
 

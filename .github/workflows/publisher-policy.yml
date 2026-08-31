@@ -1,0 +1,152 @@
+name: Prepare publisher policy grant
+
+on:
+  issues:
+    types: [opened]
+  workflow_dispatch:
+    inputs:
+      issue:
+        description: Open publisher-grant issue number to process
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: publisher-policy-${{ github.event.issue.number || inputs.issue }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.issue.user.login == 'app/hara-identity-grant-broker' &&
+       contains(github.event.issue.labels.*.name, 'publisher-grant'))
+    runs-on: ubuntu-24.04
+    environment: policy-signing
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate broker grant issue
+        id: grant
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_INPUT: ${{ inputs.issue || github.event.issue.number }}
+        run: |
+          set -euo pipefail
+          issue="${ISSUE_INPUT:?publisher grant issue is required}"
+          [[ "$issue" =~ ^[1-9][0-9]*$ ]] || { echo "invalid issue number" >&2; exit 1; }
+          gh api "repos/${GITHUB_REPOSITORY}/issues/${issue}" > issue.json
+          jq -e '
+            .state == "open" and
+            .user.login == "app/hara-identity-grant-broker" and
+            ([.labels[].name] | index("publisher-grant")) and
+            (.body | startswith("<!-- hara-publisher-grant/1 -->"))
+          ' issue.json > /dev/null
+          body="$(jq -r '.body' issue.json)"
+          subject="$(printf '%s\n' "$body" | sed -nE 's/^- GitHub subject: `([0-9]+)`.*/\1/p')"
+          key_id="$(printf '%s\n' "$body" | sed -nE 's/^- Key ID: `([^`]+)`.*/\1/p')"
+          public_key="$(printf '%s\n' "$body" | sed -nE 's/^- Public key: `([0-9a-f]+)`.*/\1/p')"
+          coordinate="$(printf '%s\n' "$body" | sed -nE 's/^- Requested coordinate: `([^`]+)`.*/\1/p')"
+          [[ "$subject" =~ ^[0-9]+$ ]]
+          [[ "$key_id" =~ ^[A-Za-z0-9._-]{1,128}$ ]]
+          [[ "$public_key" =~ ^[0-9a-f]{64}$ ]]
+          [[ "$coordinate" =~ ^hara:[a-z0-9][a-z0-9._-]*/[a-z0-9][a-z0-9._-]*$ ]]
+          printf 'issue=%s\nsubject=%s\nkey_id=%s\npublic_key=%s\ncoordinate=%s\n' \
+            "$issue" "$subject" "$key_id" "$public_key" "$coordinate" >> "$GITHUB_OUTPUT"
+
+      - name: Reuse an existing policy pull request
+        id: existing
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE: ${{ steps.grant.outputs.issue }}
+        run: |
+          set -euo pipefail
+          branch="automation/publisher-grant-${ISSUE}"
+          url="$(gh pr list --repo "$GITHUB_REPOSITORY" --state open --base main --head "$branch" --json url --jq '.[0].url')"
+          printf 'branch=%s\nurl=%s\n' "$branch" "$url" >> "$GITHUB_OUTPUT"
+
+      - uses: dtolnay/rust-toolchain@stable
+        if: steps.existing.outputs.url == ''
+        with:
+          toolchain: stable
+
+      - uses: actions/checkout@v4
+        if: steps.existing.outputs.url == ''
+        with:
+          repository: hara-lang/hara-native
+          ref: 07894f0134217357af7b7840325097a86dc4361f
+          path: .automation/hara-native
+
+      - name: Apply the exact scoped grant
+        if: steps.existing.outputs.url == ''
+        env:
+          HARA_IDENTITY_ROOT_SEED_B64: ${{ secrets.HARA_IDENTITY_ROOT_SEED_B64 }}
+          HARA_PUBLISH_AUTHORIZATION_PUBLIC_KEY: ${{ vars.HARA_PUBLISH_AUTHORIZATION_PUBLIC_KEY }}
+          SUBJECT: ${{ steps.grant.outputs.subject }}
+          KEY_ID: ${{ steps.grant.outputs.key_id }}
+          PUBLIC_KEY: ${{ steps.grant.outputs.public_key }}
+          COORDINATE: ${{ steps.grant.outputs.coordinate }}
+        run: |
+          set -euo pipefail
+          [[ "$HARA_PUBLISH_AUTHORIZATION_PUBLIC_KEY" =~ ^[0-9a-f]{64}$ ]] || {
+            echo "publication authorization public key is not configured" >&2
+            exit 1
+          }
+          umask 077
+          root_key="$RUNNER_TEMP/hara-identity-root.ed25519"
+          trap 'shred -u "$root_key"' EXIT
+          printf '%s' "$HARA_IDENTITY_ROOT_SEED_B64" | base64 --decode > "$root_key"
+          chmod 600 "$root_key"
+          cargo run --quiet --manifest-path .automation/hara-native/core/rust/Cargo.toml \
+            --bin hara-native -- id policy grant \
+            --identity "$GITHUB_WORKSPACE/identity.edn" \
+            --root-key-file "$root_key" \
+            --key-id "$KEY_ID" \
+            --public-key "$PUBLIC_KEY" \
+            --github-subject "$SUBJECT" \
+            --coordinate "$COORDINATE" \
+            --authorization-public-key "$HARA_PUBLISH_AUTHORIZATION_PUBLIC_KEY"
+          git diff --check
+          git diff -- identity.edn identity.edn.sig
+
+      - name: Commit and request the policy review
+        if: steps.existing.outputs.url == ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE: ${{ steps.grant.outputs.issue }}
+          KEY_ID: ${{ steps.grant.outputs.key_id }}
+          COORDINATE: ${{ steps.grant.outputs.coordinate }}
+          BRANCH: ${{ steps.existing.outputs.branch }}
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- identity.edn identity.edn.sig; then
+            gh issue close "$ISSUE" --repo "$GITHUB_REPOSITORY" \
+              --comment "The exact publisher grant is already present in the signed policy."
+            exit 0
+          fi
+          git switch -c "$BRANCH"
+          git config user.name "hara-identity-policy[bot]"
+          git config user.email "206326084+hara-identity-policy[bot]@users.noreply.github.com"
+          git add identity.edn identity.edn.sig
+          git commit -m "policy: grant ${KEY_ID} ${COORDINATE}"
+          git push origin "$BRANCH"
+          url="$(gh pr create --repo "$GITHUB_REPOSITORY" --base main --head "$BRANCH" \
+            --title "policy: grant ${KEY_ID} ${COORDINATE}" \
+            --body "Closes #${ISSUE}\n\nAutomated exact-coordinate publisher grant prepared from the verified Identity broker issue.")"
+          gh pr merge --auto --squash "$url"
+
+      - name: Report a reused policy pull request
+        if: steps.existing.outputs.url != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE: ${{ steps.grant.outputs.issue }}
+          URL: ${{ steps.existing.outputs.url }}
+        run: |
+          gh issue comment "$ISSUE" --repo "$GITHUB_REPOSITORY" \
+            --body "A policy grant pull request is already awaiting review: $URL"

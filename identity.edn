@@ -1,10 +1,18 @@
 {:identity/format 1
  :identity/name "hara"
  :identity/trust :github-governed
- :identity/root-key "638ad43d5840a7013e5462d0a52da429774257b8ec0a0794e6818aaa0aa835a2"
- :publisher-keys {}
+ :identity/root-key "19c4ad54f87ef817ad08657268973556772d041ee29b411224101bb646e58807"
+ :identity/publish-authorization-key "97b2fac9faa4ee679fe9351687ad7a313a9b5dbbb8643fac06ec0d2e39c0fc66"
+ :identity/recovery {:kind :lost-root
+                     :previous-root-key "638ad43d5840a7013e5462d0a52da429774257b8ec0a0794e6818aaa0aa835a2"
+                     :approved-grant-issue "https://github.com/hara-lang/hara-identity/issues/45"}
+ :publisher-keys {"hoebat-2026-01" {:public-key "96369cd1bb1ea0221511ff5f2b824bd7e4617efe3d91b5809bf16029e95facfb"
+                                      :github-subject "1455572"
+                                      :coordinates ["hara:hara-native/smoke-answer"]
+                                      :namespace-owners []
+                                      :revoked false}}
  :keys {:root {:algorithm :ed25519
-               :public-key "638ad43d5840a7013e5462d0a52da429774257b8ec0a0794e6818aaa0aa835a2"
+               :public-key "19c4ad54f87ef817ad08657268973556772d041ee29b411224101bb646e58807"
                :usage [:identity-policy]}}
  :registry-ci {:keys []}
  :policy {:signature :ed25519

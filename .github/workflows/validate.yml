@@ -53,6 +53,6 @@ jobs:
         run: npm test
       - name: Verify Netlify function bundling
         env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_TESTING_SITE_ID }}
+          NETLIFY_AUTH_TOKEN: ${{ secrets.HARA_NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ vars.HARA_IDENTITY_NETLIFY_TESTING_SITE_ID }}
         run: npx --yes netlify-cli build

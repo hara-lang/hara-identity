@@ -17,6 +17,13 @@ export const HANDOFF_TOKEN_PATH = "/v1/handoffs/token";
 export const HANDOFF_DISCOVERY_PATH = "/.well-known/hara-handoff";
 export const HANDOFF_TTL_SECONDS = 5 * 60;
 export const LEARN_CLIENT_ID = "learn";
+export const HANDOFF_CLIENTS = Object.freeze({
+  learn: Object.freeze({
+    id: LEARN_CLIENT_ID,
+    secretNames: ["HARA_ID_HANDOFF_LEARN_SECRET", "HARA_LEARN_HANDOFF_SECRET"],
+    redirectUri: learnRedirectUri,
+  }),
+});
 
 const STATE_PATTERN = /^[A-Za-z0-9_-]{32,256}$/;
 const PKCE_PATTERN = /^[A-Za-z0-9_-]{43,128}$/;
@@ -72,30 +79,60 @@ function learnRedirectUri(requestUrl, env) {
     : "https://learn.hara-lang.org/api/auth/callback";
 }
 
-export function readLearnHandoffClient(env = process.env, requestUrl = "https://id.hara-lang.org/") {
-  const secret = envValue(env, "HARA_LEARN_HANDOFF_SECRET");
+function handoffClientDefinition(clientId) {
+  return typeof clientId === "string" ? HANDOFF_CLIENTS[clientId] ?? null : null;
+}
+
+function handoffClientSecret(client, env) {
+  for (const name of client.secretNames) {
+    const value = envValue(env, name);
+    if (value) return value;
+  }
+  return "";
+}
+
+export function readHandoffClient(clientId, env = process.env, requestUrl = "https://id.hara-lang.org/") {
+  const definition = handoffClientDefinition(clientId);
+  if (!definition) {
+    throw new AuthError({
+      status: 400,
+      code: "HANDOFF_CLIENT_INVALID",
+      message: "Unknown Hara handoff client.",
+    });
+  }
+
+  const secret = handoffClientSecret(definition, env);
   if (secret.length < 32) {
     throw new AuthError({
       status: 503,
       code: "HANDOFF_NOT_CONFIGURED",
-      message: "The Hara Learn identity handoff is not configured.",
+      message: "The Hara identity handoff client is not configured.",
     });
   }
   return {
-    clientId: LEARN_CLIENT_ID,
+    clientId: definition.id,
     clientSecret: secret,
-    redirectUri: learnRedirectUri(requestUrl, env),
+    redirectUri: definition.redirectUri(requestUrl, env),
   };
 }
 
+export function readLearnHandoffClient(env = process.env, requestUrl = "https://id.hara-lang.org/") {
+  return readHandoffClient(LEARN_CLIENT_ID, env, requestUrl);
+}
+
+export function configuredHandoffClients(env = process.env, requestUrl = "https://id.hara-lang.org/") {
+  return Object.values(HANDOFF_CLIENTS).flatMap((client) => {
+    try {
+      const configured = readHandoffClient(client.id, env, requestUrl);
+      return [{ id: configured.clientId, redirectUri: configured.redirectUri }];
+    } catch {
+      return [];
+    }
+  });
+}
+
 export function isHandoffConfigured(env = process.env, requestUrl = "https://id.hara-lang.org/") {
-  if (!isAuthConfigured(env)) return false;
-  try {
-    readLearnHandoffClient(env, requestUrl);
-    return true;
-  } catch {
-    return false;
-  }
+  return isAuthConfigured(env) && configuredHandoffClients(env, requestUrl).length > 0;
 }
 
 export function createMemoryHandoffStore() {
@@ -163,8 +200,8 @@ export async function defaultHandoffStore() {
 
 function assertAuthorizeRequest(request, env) {
   const url = new URL(request.url);
-  const client = readLearnHandoffClient(env, request.url);
   const clientId = url.searchParams.get("client_id");
+  const client = readHandoffClient(clientId, env, request.url);
   const redirectUri = url.searchParams.get("redirect_uri");
   const state = url.searchParams.get("state");
   const challenge = url.searchParams.get("code_challenge");
@@ -267,8 +304,15 @@ export async function exchangeHandoff(request, {
     return tokenError(405, "METHOD_NOT_ALLOWED", "Only POST is supported.", { Allow: "POST" });
   }
 
-  const client = readLearnHandoffClient(env, request.url);
   const authorization = parseBasicAuthorization(request.headers.get("authorization"));
+  let client;
+  try {
+    client = readHandoffClient(authorization?.clientId, env, request.url);
+  } catch {
+    return tokenError(401, "HANDOFF_CLIENT_INVALID", "The handoff client could not be authenticated.", {
+      "WWW-Authenticate": "Basic realm=\"hara-handoff\"",
+    });
+  }
   if (
     !authorization
     || authorization.clientId !== client.clientId
@@ -347,17 +391,14 @@ export function handoffDiscovery(request, env = process.env) {
     });
   }
   const origin = new URL(request.url).origin;
-  let redirectUri = null;
-  try {
-    redirectUri = learnRedirectUri(request.url, env);
-  } catch {}
+  const clients = configuredHandoffClients(env, request.url);
   return jsonResponse({
     issuer: origin,
     authorizationEndpoint: `${origin}${HANDOFF_AUTHORIZE_PATH}`,
     tokenEndpoint: `${origin}${HANDOFF_TOKEN_PATH}`,
-    clients: redirectUri ? [{ id: LEARN_CLIENT_ID, redirectUri }] : [],
+    clients,
     codeChallengeMethodsSupported: ["S256"],
-    configured: isHandoffConfigured(env, request.url),
+    configured: isAuthConfigured(env) && clients.length > 0,
   }, { method: request.method });
 }
 

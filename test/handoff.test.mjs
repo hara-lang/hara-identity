@@ -45,6 +45,20 @@ test("publishes a fail-closed handoff discovery document", async () => {
   assert.equal(body.clients[0].redirectUri, "https://learn.hara-lang.org/api/auth/callback");
 });
 
+test("accepts the generic Identity client secret name without its Learn-named fallback", async () => {
+  const env = {
+    ...ENV,
+    HARA_ID_HANDOFF_LEARN_SECRET: HANDOFF_SECRET,
+  };
+  delete env.HARA_LEARN_HANDOFF_SECRET;
+
+  const response = await handle(new Request("https://id.hara-lang.org/.well-known/hara-handoff"), { env });
+  const body = await response.json();
+  assert.equal(response.status, 200);
+  assert.equal(body.configured, true);
+  assert.deepEqual(body.clients, [{ id: "learn", redirectUri: "https://learn.hara-lang.org/api/auth/callback" }]);
+});
+
 test("requires the central session before issuing a Learn code", async () => {
   const { url } = authorizeUrl();
   const response = await handle(new Request(url), { env: ENV, now: NOW, store: createMemoryHandoffStore() });

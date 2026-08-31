@@ -98,6 +98,7 @@ test("authorization mode returns an intent-bound service signature after GitHub 
   await confirmDevice(device.id, device.code, browserRequest(), { store, env: env(authorization), now: NOW });
   const status = await deviceStatus(device.id, device.secret, { store, now: NOW });
   assert.equal(status.status, "authorized");
+  assert.equal(status.authorization.payload.authorization, "hara-publisher/1");
   assert.equal(status.authorization.payload.keyId, "hoebat-2026-01");
   assert.equal(status.authorization.payload.githubSubject, "1455572");
   const payload = status.authorization.payload;

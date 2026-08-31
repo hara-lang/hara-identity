@@ -128,6 +128,7 @@ function authorization(record, profile, env, now) {
     });
   }
   const payload = {
+    authorization: "hara-publisher/1",
     keyId: record.keyId,
     githubSubject: profile.id,
     coordinate: record.coordinate,

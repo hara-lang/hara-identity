@@ -92,7 +92,7 @@ Set these encrypted environment variables on the Identity Netlify sites only:
 HARA_GITHUB_OAUTH_CLIENT_ID
 HARA_GITHUB_OAUTH_CLIENT_SECRET
 HARA_AUTH_SESSION_SECRET
-HARA_LEARN_HANDOFF_SECRET
+HARA_ID_HANDOFF_LEARN_SECRET
 HARA_PUBLISH_AUTHORIZATION_PRIVATE_KEY
 HARA_ID_GRANT_APP_ID
 HARA_ID_GRANT_APP_INSTALLATION_ID
@@ -127,7 +127,7 @@ Testing callback:
 https://id.testing.hara-lang.org/auth/github/callback
 ```
 
-Use separate production and testing OAuth registrations, session secrets, and Learn handoff secrets. `HARA_AUTH_SESSION_SECRET` and `HARA_LEARN_HANDOFF_SECRET` must each be at least 32 characters. Neither value belongs on www, Docs, Playground, Build, or Packages; Learn receives only its matching handoff secret, never the Identity session secret.
+Use separate production and testing OAuth registrations, session secrets, and client handoff secrets. `HARA_AUTH_SESSION_SECRET` and `HARA_ID_HANDOFF_LEARN_SECRET` must each be at least 32 characters. The existing `HARA_LEARN_HANDOFF_SECRET` name remains a temporary fallback during migration. Neither value belongs on www, Docs, Playground, Build, or Packages; Learn receives only its matching handoff secret, never the Identity session secret.
 
 See [`docs/shared-github-identity.md`](docs/shared-github-identity.md) for the central session flow.
 
